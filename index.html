@@ -831,133 +831,158 @@
 		<!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
             </div>
 
-            <div id="teacher-article-preview-panel" class="card" style="display: none; background: #fdfefe; border: 2px solid #6366f1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-                    <h3 id="preview-art-title" style="margin: 0; color: #4338ca;">📖 篇章全文與完整測驗題目預覽</h3>
-                    <button type="button" class="btn btn-sm btn-secondary" onclick="closeArticlePreview()">✖ 關閉預覽</button>
-                </div>
-                <div id="preview-art-body" style="margin-top: 15px;"></div>
+
+<div class="card" id="article-editor-card" style="display: none;">
+    <h4 id="article-form-title" style="margin-top:0; color:#4c1d95;">🤖 AI 素養導向出題引擎 (設定範疇、建議年級多選與推薦班級)</h4>
+
+    <!-- 1. 【AI 匯入面板】 -->
+    <div id="ai-import-panel" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; margin-bottom: 20px;">
+        <h4 style="margin-top: 0; color: #166534; display: flex; justify-content: space-between;">
+            <span>🤖 AI 輔助出題匯入工具</span>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="copyPrompt()">📋 複製 Prompt 給 AI</button>
+        </h4>
+        <label style="font-weight: bold; font-size: 0.9em;">📥 請將 AI 產生的 JSON 完整貼在下方，系統將自動填入三級文章與所有題目：</label>
+        <textarea id="ai-json-input" class="form-control" placeholder='{"topic": "...", "versions": {...}}' style="height: 120px; margin-top: 5px; font-family: monospace;"></textarea>
+        <div style="margin-top: 10px; text-align: right;">
+            <button type="button" class="btn" style="background: #059669; color: white; width: 100%; font-size: 1.1em; padding: 10px;" onclick="parseAndFillAI()">
+                ✨ 一鍵全自動解析並填入表單
+            </button>
+        </div>
+    </div>
+
+    <!-- 表單開始 -->
+    <form onsubmit="handlePublishArticle(event)">
+        
+        <!-- 2. 【文章基本設定】 -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div class="form-group">
+                <label>篇章標題：</label>
+                <input type="text" id="new-art-title" class="form-control" placeholder="例如：朱自清《背影》（節錄）" required>
             </div>
-
-            <div class="card" id="article-editor-card">
-                <h4 id="article-form-title" style="margin-top:0; color:#4c1d95;">🤖 AI 素養導向出題引擎 (設定範疇、建議年級多選與推薦班級)</h4>
-                <form onsubmit="handlePublishArticle(event)">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
-                        <div class="form-group">
-                            <label>篇章標題：</label>
-                            <input type="text" id="new-art-title" class="form-control" placeholder="例如：朱自清《背影》（節錄）" required>
-                        </div>
-                        <div class="form-group">
-                            <label>文章範疇 (可自訂或由推薦選取)：</label>
-                            <input type="text" id="new-art-category" list="category-datalist" class="form-control" placeholder="選擇或直接輸入全新範疇..." required>
-                            <datalist id="category-datalist"></datalist>
-                        </div>
-                    </div>
-
-                    <!-- 建議年級 (多選) 與推薦班級設定 -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
-                        <div>
-                            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
-                                <label style="margin: 0;"><strong>🎯 建議年級 (可複選適合年級)：</strong></label>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllGradeCheckboxes(true)" style="padding: 2px 6px; font-size: 0.75em;">全選</button>
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllGradeCheckboxes(false)" style="padding: 2px 6px; font-size: 0.75em;">清除</button>
-                                </div>
-                            </div>
-                            <div id="new-art-grades-container" class="target-class-chk-group">
-                                <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中一" checked> 中一級</label>
-                                <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中二"> 中二級</label>
-                                <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中三"> 中三級</label>
-                                <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中四"> 中四級</label>
-                                <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中五"> 中五級</label>
-                                <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中六"> 中六級</label>
-                            </div>
-                            <small style="color:#64748b;">學生所屬年級符合勾選之任一年級，即會優先推薦。</small>
-                        </div>
-                        <div>
-                            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
-                                <label style="margin: 0;"><strong>⭐ 推薦班級 (無視建議年級，優先閱讀)：</strong></label>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllTargetClassCheckboxes(true)" style="padding: 2px 6px; font-size: 0.75em;">全選</button>
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllTargetClassCheckboxes(false)" style="padding: 2px 6px; font-size: 0.75em;">清除</button>
-                                </div>
-                            </div>
-                            <div id="new-art-target-classes-container" class="target-class-chk-group"></div>
-                            <small style="color:#b45309;">勾選之班級學生登入時，將優先顯示並標註【⭐ 班級推薦】！</small>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>原始文本全文：</label>
-                        <textarea id="raw-article-input" class="form-control" rows="3" placeholder="貼上原文內容..."></textarea>
-                        <button type="button" class="btn btn-purple" style="margin-top: 8px;" onclick="simulatePedagogicalAIGeneration()">🤖 執行 AI 素養出題與階梯改寫 (含思維標籤與鷹架提示)</button>
-                    </div>
-                    <div id="ai-review-panel" style="border-top: 2px dashed #cbd5e1; padding-top: 15px; margin-top: 15px;">
-                        <h4 style="color: #6a1b9a;">🔍 發布前審核編輯區 (文章內文、PIRLS 層次與選項提示)：</h4>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
-                            <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border: 1px solid #bbf7d0;">
-                                <label><strong>🟢 初階文本 (目標 ~150字)：</strong></label>
-                                <textarea id="new-art-content-low" class="form-control" rows="5" required></textarea>
-                                <small>建議閱讀秒數：<input type="number" id="new-art-time-low" value="60" style="width:70px;"> 秒</small>
-                            </div>
-                            <div style="background: #fefce8; padding: 12px; border-radius: 6px; border: 1px solid #fef08a;">
-                                <label><strong>🟡 進階文本 (目標 ~350字)：</strong></label>
-                                <textarea id="new-art-content-med" class="form-control" rows="5" required></textarea>
-                                <small>建議閱讀秒數：<input type="number" id="new-art-time-med" value="180" style="width:70px;"> 秒</small>
-                            </div>
-                            <div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;">
-                                <label><strong>🔴 高階文本 (目標 ~600字)：</strong></label>
-                                <textarea id="new-art-content-high" class="form-control" rows="5" required></textarea>
-                                <small>建議閱讀秒數：<input type="number" id="new-art-time-high" value="300" style="width:70px;"> 秒</small>
-                            </div>
-                        </div>
-                        <h5 style="margin-top: 20px; color: #1e40af;">📝 題目思維層次、選項與鷹架提示修訂：</h5>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;">
-                            <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border: 1px solid #bbf7d0;">
-                                <h6 style="margin: 0 0 10px 0; font-size: 1em;">🟢 初階題目 (3 題)</h6>
-                                <div id="low-quiz-fields"></div>
-                            </div>
-                            <div style="background: #fefce8; padding: 12px; border-radius: 6px; border: 1px solid #fef08a;">
-                                <h6 style="margin: 0 0 10px 0; font-size: 1em;">🟡 進階題目 (4 題)</h6>
-                                <div id="medium-quiz-fields"></div>
-                            </div>
-                            <div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;">
-                                <h6 style="margin: 0 0 10px 0; font-size: 1em;">🔴 高階題目 (5 題)</h6>
-                                <div id="high-quiz-fields"></div>
-                            </div>
-                        </div>
-
-                        <div class="form-group" style="margin-top: 15px;">
-                            <label>可選填：原始文章完整連結 (學生完成測驗後及歷程可見)</label>
-                            <input type="url" id="new-art-link" class="form-control" placeholder="https://...">
-                        </div>
-
-                        <div style="display: flex; gap: 15px; margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: wrap;">
-                            <div style="flex:1; min-width: 180px;">
-                                <label>發布狀態：</label>
-                                <select id="new-art-status" class="form-control">
-                                    <option value="published">🚀 立即上架公開</option>
-                                    <option value="unpublished">🔒 存為草稿 / 下架</option>
-                                </select>
-                            </div>
-                            <div style="flex:1; min-width: 220px;">
-                                <label>最後修訂日期：</label>
-                                <input type="text" id="new-art-lastmodified" class="form-control" readonly style="background:#e2e8f0; font-weight:bold;">
-                            </div>
-                            <div style="flex:1; display:flex; align-items:center; min-width: 250px;">
-                                <label style="cursor: pointer; margin-top: 15px;">
-                                    <input type="checkbox" id="new-art-allow-retake"> 📢 標記為內容更新，允許已完成學生重做
-                                </label>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px; margin-top: 15px;">
-                            <button type="submit" id="publish-submit-btn" class="btn btn-success" style="flex:2; font-size: 1.1em; padding: 12px;">🚀 確定儲存並發布篇章</button>
-                            <button type="button" id="cancel-edit-art-btn" class="btn btn-secondary" style="flex:1; display:none;" onclick="cancelArticleEdit()">取消編輯</button>
-                        </div>
-                    </div>
-                </form>
+            <div class="form-group">
+                <label>文章範疇 (可自訂或由推薦選取)：</label>
+                <input type="text" id="new-art-category" list="category-datalist" class="form-control" placeholder="選擇或直接輸入全新範疇..." required>
+                <datalist id="category-datalist"></datalist>
             </div>
         </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
+                    <label style="margin: 0;"><strong>🎯 建議年級 (可複選適合年級)：</strong></label>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllGradeCheckboxes(true)" style="padding: 2px 6px; font-size: 0.75em;">全選</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllGradeCheckboxes(false)" style="padding: 2px 6px; font-size: 0.75em;">清除</button>
+                    </div>
+                </div>
+                <div id="new-art-grades-container" class="target-class-chk-group">
+                    <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中一" checked> 中一級</label>
+                    <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中二"> 中二級</label>
+                    <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中三"> 中三級</label>
+                    <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中四"> 中四級</label>
+                    <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中五"> 中五級</label>
+                    <label class="target-class-label"><input type="checkbox" class="art-grade-chk" value="中六"> 中六級</label>
+                </div>
+                <small style="color:#64748b;">學生所屬年級符合勾選之任一年級，即會優先推薦。</small>
+            </div>
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
+                    <label style="margin: 0;"><strong>⭐ 推薦班級 (無視建議年級，優先閱讀)：</strong></label>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllTargetClassCheckboxes(true)" style="padding: 2px 6px; font-size: 0.75em;">全選</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllTargetClassCheckboxes(false)" style="padding: 2px 6px; font-size: 0.75em;">清除</button>
+                    </div>
+                </div>
+                <div id="new-art-target-classes-container" class="target-class-chk-group"></div>
+                <small style="color:#b45309;">勾選之班級學生登入時，將優先顯示並標註【⭐ 班級推薦】！</small>
+            </div>
+        </div>
+
+        <!-- 原始文章完整連結 (緊接在班級設定下方) -->
+        <div class="form-group" style="margin-top: 15px;">
+            <label>可選填：原始文章完整連結 (學生完成測驗後及歷程可見)</label>
+            <input type="url" id="new-art-link" class="form-control" placeholder="https://...">
+        </div>
+
+        <!-- 3. 【👀 預覽畫面顯示區】 -->
+        <div id="ai-proofread-preview-container"></div>
+
+        <!-- 4. 【🚀 發布區 (狀態與發布按鈕)】 -->
+        <div id="publish-action-area" style="margin-top: 20px; border-top: 2px dashed #cbd5e1; padding-top: 15px;">
+            <div style="display: flex; gap: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: wrap;">
+                <div style="flex:1; min-width: 180px;">
+                    <label>發布狀態：</label>
+                    <select id="new-art-status" class="form-control">
+                        <option value="published">🚀 立即上架公開</option>
+                        <option value="unpublished">🔒 存為草稿 / 下架</option>
+                    </select>
+                </div>
+                <div style="flex:1; min-width: 220px;">
+                    <label>最後修訂日期：</label>
+                    <input type="text" id="new-art-lastmodified" class="form-control" readonly style="background:#e2e8f0; font-weight:bold;">
+                </div>
+                <div style="flex:1; display:flex; align-items:center; min-width: 250px;">
+                    <label style="cursor: pointer; margin-top: 15px;">
+                        <input type="checkbox" id="new-art-allow-retake"> 📢 標記為內容更新，允許已完成學生重做
+                    </label>
+                </div>
+            </div>
+
+            <!-- 按鈕區 -->
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="submit" id="publish-submit-btn" class="btn btn-success" style="flex:2; font-size: 1.1em; padding: 12px;">🚀 確定儲存並發布篇章</button>
+                <button type="button" id="cancel-edit-art-btn" class="btn btn-secondary" style="flex:1; display: none;" onclick="cancelArticleEdit()">取消編輯</button>
+                <button type="button" id="btn-show-editor" class="btn btn-warning" onclick="toggleEditor()" style="flex:1; background-color: #f59e0b; color: white; border: none; font-size: 1.1em; padding: 12px;">✏️ 需修訂內容或題目</button>
+            </div>
+        </div>
+
+        <!-- 5. 【審核編輯區】(預設隱藏) -->
+        <div id="editor-container" style="display: none; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px dashed #cbd5e1; margin-top: 20px;">
+            <h4 style="color: #6a1b9a;">🔍 發布前審核編輯區 (文章內文、PIRLS 層次與選項提示)：</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                    <label><strong>🟢 初階文本 (目標 ~150字)：</strong></label>
+                    <textarea id="new-art-content-low" class="form-control" rows="5" required></textarea>
+                    <small>建議閱讀秒數：<input type="number" id="new-art-time-low" value="60" style="width:70px;"> 秒</small>
+                </div>
+                <div style="background: #fefce8; padding: 12px; border-radius: 6px; border: 1px solid #fef08a;">
+                    <label><strong>🟡 進階文本 (目標 ~350字)：</strong></label>
+                    <textarea id="new-art-content-med" class="form-control" rows="5" required></textarea>
+                    <small>建議閱讀秒數：<input type="number" id="new-art-time-med" value="180" style="width:70px;"> 秒</small>
+                </div>
+                <div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;">
+                    <label><strong>🔴 高階文本 (目標 ~600字)：</strong></label>
+                    <textarea id="new-art-content-high" class="form-control" rows="5" required></textarea>
+                    <small>建議閱讀秒數：<input type="number" id="new-art-time-high" value="300" style="width:70px;"> 秒</small>
+                </div>
+            </div>
+
+            <h5 style="margin-top: 20px; color: #1e40af;">📝 題目思維層次、選項與鷹架提示修訂：</h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;">
+                <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                    <h6 style="margin: 0 0 10px 0; font-size: 1em;">🟢 初階題目 (3 題)</h6>
+                    <div id="low-quiz-fields"></div>
+                </div>
+                <div style="background: #fefce8; padding: 12px; border-radius: 6px; border: 1px solid #fef08a;">
+                    <h6 style="margin: 0 0 10px 0; font-size: 1em;">🟡 進階題目 (4 題)</h6>
+                    <div id="medium-quiz-fields"></div>
+                </div>
+                <div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;">
+                    <h6 style="margin: 0 0 10px 0; font-size: 1em;">🔴 高階題目 (5 題)</h6>
+                    <div id="high-quiz-fields"></div>
+                </div>
+            </div>
+
+            <!-- 6. 【👁️ 更新/生成最新校對預覽 (按鈕)】 -->
+            <div style="text-align: right; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                <button type="button" class="btn btn-info" onclick="generateManualPreviewAndScroll()" style="background-color: #0ea5e9; color: white; font-size: 1.05em; padding: 10px 20px;">👁️ 更新/生成最新校對預覽</button>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+
 
         <!-- 教師分頁 3: 獎勵庫存與品項管理 -->
         <div id="teacher-manage-rewards" style="display: none;">
@@ -1269,7 +1294,6 @@ let quizSession = {
                 storeRewardsData = data.storeRewardsData ? JSON.parse(data.storeRewardsData) : [];
                 rewardAdminData = data.rewardAdminData ? JSON.parse(data.rewardAdminData) : [];
             } else {
-                // ⚠️ 雲端是空的，強制初始化所有陣列，避免後續圖表渲染崩潰！
                 rosterData = [{ username: 'teacher_chan', name: '陳老師 (管理員)', class: 'TEACHER', password: '123', isLocked: false }];
                 articlesData = {};
                 quizSubmissionsData = [];
@@ -1280,17 +1304,25 @@ let quizSession = {
             console.error("雲端連線失敗:", error);
         }
 
-        // 🛡️ 終極防護：確保超級管理員 (ADMIN) 帳號一定存在
         if (!rosterData) rosterData = [];
         const hasAdmin = rosterData.find(r => r.username === 'admin');
         if (!hasAdmin) {
             rosterData.push({ username: 'admin', name: '系統管理員', class: 'ADMIN', password: 'admin', isLocked: false });
         } else if (hasAdmin.class === 'TEACHER') {
-            hasAdmin.class = 'ADMIN'; // 自動將舊版管理員升級為 ADMIN 權限
+            hasAdmin.class = 'ADMIN'; 
         }
 
         if (titleEl) titleEl.innerHTML = originalTitle; 
         checkLoginRole(); 
+        
+        // ✅ 自動登入檢查 (放在讀取雲端資料之後才執行)
+        const savedUser = localStorage.getItem('savedUsername');
+        const savedPass = localStorage.getItem('savedPassword');
+        const savedIsTeacher = localStorage.getItem('savedIsTeacher') === 'true';
+        
+        if (savedUser && savedPass) {
+            login(savedUser, savedPass, savedIsTeacher);
+        }
     }
 
     // 4. 改寫：將資料同步上傳雲端
@@ -1316,16 +1348,22 @@ let quizSession = {
     }
 
  // 5. 登入邏輯 (修復 ID 名稱錯誤與學生初始化)
-    function login() {
+    function login(autoUser, autoPass, autoIsTeacher) {
         try {
             const urlParams = new URLSearchParams(window.location.search);
-            const isTeacher = urlParams.get('role') === 'teacher';
+            let isTeacher = urlParams.get('role') === 'teacher';
+            if (autoIsTeacher !== undefined) isTeacher = autoIsTeacher;
             
-            const userField = isTeacher ? 'teacher-login-username' : 'login-username';
-            const passField = isTeacher ? 'teacher-login-password' : 'login-password';
-            
-            const user = document.getElementById(userField).value.trim();
-            const pass = document.getElementById(passField).value.trim();
+            let user, pass;
+            if (autoUser && autoPass) {
+                user = autoUser;
+                pass = autoPass;
+            } else {
+                const userField = isTeacher ? 'teacher-login-username' : 'login-username';
+                const passField = isTeacher ? 'teacher-login-password' : 'login-password';
+                user = document.getElementById(userField).value.trim();
+                pass = document.getElementById(passField).value.trim();
+            }
             
             if (!user || !pass) {
                 alert('請輸入帳號與密碼');
@@ -1336,7 +1374,6 @@ let quizSession = {
             const found = rosterData.find(r => r.username === user && r.password === pass);
             
             if (found) {
-                // 💡 判斷是否為教職員 (包含 TEACHER 與 ADMIN)
                 const userClass = (found.class || '').toUpperCase();
                 const isStaff = found.class === 'TEACHER' || found.class === 'ADMIN';
 
@@ -1353,10 +1390,15 @@ let quizSession = {
                     return;
                 }
 
+                // ✅ 登入成功，寫入 localStorage 讓下次重新整理能記住
+                localStorage.setItem('savedUsername', found.username);
+                localStorage.setItem('savedPassword', found.password);
+                localStorage.setItem('savedIsTeacher', isTeacher);
+
                 currentStudentUsername = found.username;
                 currentStudentName = found.name;
                 currentStudentClass = userClass; 
-                window.currentStudentClass = userClass; // 👈 加上這行：強制寫入最高層級，防失憶
+                window.currentStudentClass = userClass;
                 points = found.currentPoints || 0;
                 totalPoints = found.totalPoints || 0;
                 
@@ -1366,9 +1408,7 @@ let quizSession = {
                     document.getElementById('main-teacher-system').style.display = 'block';
                     const roleTitle = found.class === 'ADMIN' ? '👑 超級管理員' : '👨‍🏫 教師';
                     document.getElementById('teacher-info-text').innerText = `${roleTitle}：${found.username} (${found.name})`;
-                    // ... (後面的 safeRun 不變)
 
-                    
                     const safeRun = (fn, name) => { 
                         try { fn(); } catch(e) { console.error(`[${name}] 發生錯誤:`, e); } 
                     };
@@ -1382,7 +1422,6 @@ let quizSession = {
                     safeRun(renderMultiClassAnalytics, 'renderMultiClassAnalytics');
                     
                 } else {
-                    // 💡 修正：正確的學生後台 ID
                     document.getElementById('main-student-system').style.display = 'block';
                     document.getElementById('student-info-text').innerText = `登入身份：${found.username} ${found.name} (${found.class}班 ${found.seat}號) | 年級：${getStudentGradeFromClass(found.class)}`;
                     
@@ -1410,13 +1449,14 @@ let quizSession = {
                     safeRun(renderStudentRedemptionHistory, 'renderStudentRedemptionHistory');
                 }
             } else {
-                alert('帳號或密碼錯誤');
+                if(!autoUser) alert('帳號或密碼錯誤');
             }
         } catch (err) {
             console.error("登入時發生未預期的錯誤:", err);
-            alert("⚠️ 系統發生錯誤！請按 F12 打開 Console 檢查詳細紅字。");
+            if(!autoUser) alert("⚠️ 系統發生錯誤！請按 F12 打開 Console 檢查詳細紅字。");
         }
     }
+
 
 
     let currentRole = 'student';
@@ -1822,14 +1862,13 @@ function toggleBatchGradeGroup(mode) {
     }
 
     function logout() {
+        localStorage.removeItem('savedUsername');
+        localStorage.removeItem('savedPassword');
+        localStorage.removeItem('savedIsTeacher');
         document.getElementById('main-student-system').style.display = 'none';
         document.getElementById('main-teacher-system').style.display = 'none';
         document.getElementById('login-card').style.display = 'block';
-    }
-
-    function updatePointsDisplay() {
-        document.getElementById('user-points').innerText = points;
-        document.getElementById('user-total-points').innerText = totalPoints;
+        window.location.reload();
     }
 
     /* ========================================================
@@ -3359,8 +3398,7 @@ function renderArticleManagementList() {
                 <td><small>${art.lastModified || '-'}</small></td>
                 <td>${statusTag}</td>
                 <td>
-                    <button type="button" class="btn btn-sm btn-purple" onclick="previewArticle('${key}')">👁️ 預覽</button>
-                    <button type="button" class="btn btn-sm btn-warning" onclick="editArticle('${key}')">✏️ 編輯</button>
+                 <button type="button" class="btn btn-sm btn-warning" onclick="editArticle('${key}')">✏️ 編輯</button>
                     <button type="button" class="btn btn-sm ${isPub ? 'btn-danger' : 'btn-success'}" onclick="toggleArticleStatus('${key}')">
                         ${isPub ? '🔒 下架' : '🚀 上架'}
                     </button>
@@ -3431,77 +3469,126 @@ function changeTeacherArticlePage(targetPage) {
         alert(`✅ 已成功刪除篇章【${art.title}】！`);
     }
 
-    function startNewArticleCreation() {
-        editingArticleKey = null;
-        document.getElementById('article-form-title').innerText = '🤖 AI 素養導向出題引擎 (建立全新篇章)';
-        document.getElementById('new-art-title').value = '';
-        document.getElementById('new-art-category').value = '文學與生活';
-
-        document.querySelectorAll('.art-grade-chk').forEach(c => {
-            c.checked = (c.value === '中一');
-        });
-        document.querySelectorAll('.art-target-class-chk').forEach(c => c.checked = false);
-
-        document.getElementById('raw-article-input').value = '';
-        document.getElementById('new-art-content-low').value = '';
-        document.getElementById('new-art-content-med').value = '';
-        document.getElementById('new-art-content-high').value = '';
-        document.getElementById('new-art-time-low').value = '60';
-        document.getElementById('new-art-time-med').value = '180';
-        document.getElementById('new-art-time-high').value = '300';
-        document.getElementById('new-art-link').value = '';
-        document.getElementById('new-art-status').value = 'published';
-        document.getElementById('new-art-lastmodified').value = getFormattedCurrentDate();
-        document.getElementById('new-art-allow-retake').checked = false;
-        document.getElementById('publish-submit-btn').innerText = '🚀 確定儲存並發布篇章';
-        document.getElementById('cancel-edit-art-btn').style.display = 'none';
-        renderQuizEditorFields({low:[], medium:[], high:[]}); 
+// 3. 建立新文章
+function startNewArticleCreation() {
+    document.getElementById('article-editor-card').style.display = 'block';
+    
+    const aiPanel = document.getElementById('ai-import-panel');
+    if (aiPanel) aiPanel.style.display = 'block'; // 新增時顯示AI面板
+    
+    document.getElementById('editor-container').style.display = 'none'; // 預設隱藏編輯區
+    document.getElementById('btn-show-editor').innerText = '✏️ 需修訂內容或題目';
+    
+    // 顯示取消按鈕，並改為「取消新增」
+    const cancelBtn = document.getElementById('cancel-edit-art-btn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'inline-block';
+        cancelBtn.innerText = '取消新增';
     }
 
-    function editArticle(key) {
-        const art = articlesData[key];
-        if (!art) return;
-        editingArticleKey = key;
-        document.getElementById('article-form-title').innerText = `✏️ 正在編輯篇章：${art.title}`;
-        document.getElementById('new-art-title').value = art.title;
-        document.getElementById('new-art-category').value = art.category || '文學與生活';
+    let previewBox = document.getElementById('ai-proofread-preview-container');
+    if (previewBox) previewBox.innerHTML = ''; // 清空預覽
+    
+    editingArticleKey = null;
+    document.getElementById('article-form-title').innerText = '🤖 AI 素養導向出題引擎 (建立全新篇章)';
+    document.getElementById('new-art-title').value = '';
+    document.getElementById('new-art-category').value = '文學與生活';
+    
+    document.querySelectorAll('.art-grade-chk').forEach(c => {
+        c.checked = (c.value === '中一');
+    });
+    document.querySelectorAll('.art-target-class-chk').forEach(c => c.checked = false);
+    
+    document.getElementById('new-art-content-low').value = '';
+    document.getElementById('new-art-content-med').value = '';
+    document.getElementById('new-art-content-high').value = '';
+    document.getElementById('new-art-time-low').value = '60';
+    document.getElementById('new-art-time-med').value = '180';
+    document.getElementById('new-art-time-high').value = '300';
+    document.getElementById('new-art-link').value = '';
+    document.getElementById('new-art-status').value = 'published';
+    document.getElementById('new-art-lastmodified').value = getFormattedCurrentDate();
+    document.getElementById('new-art-allow-retake').checked = false;
+    document.getElementById('publish-submit-btn').innerText = '🚀 確定儲存並發布篇章';
+    
+    // ⚠️ 關鍵修復：畫出 12 個題目的空白格子，這樣才不會空空如也！
+    renderQuizEditorFields({low:[], medium:[], high:[]}); 
+    
+    document.getElementById('article-editor-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
-        let gradeList = [];
-        if (Array.isArray(art.recommendedGrades)) {
-            gradeList = art.recommendedGrades;
-        } else if (art.recommendedGrades) {
-            gradeList = [art.recommendedGrades];
-        } else if (art.recommendedGrade) {
-            gradeList = [art.recommendedGrade];
-        }
-        document.querySelectorAll('.art-grade-chk').forEach(chk => {
-            chk.checked = gradeList.includes(chk.value) || gradeList.includes('ALL');
-        });
-
-        const targets = art.targetClasses || [];
-        document.querySelectorAll('.art-target-class-chk').forEach(chk => {
-            chk.checked = targets.includes(chk.value);
-        });
-
-        document.getElementById('new-art-content-low').value = art.content.low || '';
-        document.getElementById('new-art-content-med').value = art.content.medium || '';
-        document.getElementById('new-art-content-high').value = art.content.high || '';
-        document.getElementById('new-art-time-low').value = art.times.low || 60;
-        document.getElementById('new-art-time-med').value = art.times.medium || 180;
-        document.getElementById('new-art-time-high').value = art.times.high || 300;
-        document.getElementById('new-art-link').value = art.fullArticleLink || '';
-        document.getElementById('new-art-status').value = art.status || 'published';
-        document.getElementById('new-art-lastmodified').value = art.lastModified || getFormattedCurrentDate();
-        document.getElementById('new-art-allow-retake').checked = !!art.allowRetake;
-        renderQuizEditorFields(art.quizzes);
-        document.getElementById('publish-submit-btn').innerText = '💾 儲存並更新篇章設定';
-        document.getElementById('cancel-edit-art-btn').style.display = 'inline-flex';
-        document.getElementById('article-editor-card').scrollIntoView({ behavior: 'smooth' });
+// 4. 編輯舊文章
+function editArticle(key) {
+    document.getElementById('article-editor-card').style.display = 'block';
+    
+    const aiPanel = document.getElementById('ai-import-panel');
+    if (aiPanel) aiPanel.style.display = 'none'; // 編輯時隱藏AI面板
+    
+    document.getElementById('editor-container').style.display = 'none'; // 預設隱藏編輯區
+    document.getElementById('btn-show-editor').innerText = '✏️ 需修訂內容或題目';
+    
+    // 顯示取消編輯按鈕
+    const cancelBtn = document.getElementById('cancel-edit-art-btn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'inline-block';
+        cancelBtn.innerText = '取消編輯';
     }
 
-    function cancelArticleEdit() {
-        startNewArticleCreation();
+    const art = articlesData[key];
+    if (!art) return;
+    
+    editingArticleKey = key;
+    document.getElementById('article-form-title').innerText = `✏️ 正在編輯篇章：${art.title}`;
+    document.getElementById('new-art-title').value = art.title;
+    document.getElementById('new-art-category').value = art.category || '文學與生活';
+    
+    let gradeList = [];
+    if (Array.isArray(art.recommendedGrades)) {
+        gradeList = art.recommendedGrades;
+    } else if (art.recommendedGrades) {
+        gradeList = [art.recommendedGrades];
+    } else if (art.recommendedGrade) {
+        gradeList = [art.recommendedGrade];
     }
+    
+    document.querySelectorAll('.art-grade-chk').forEach(chk => {
+        chk.checked = gradeList.includes(chk.value) || gradeList.includes('ALL');
+    });
+    
+    const targets = art.targetClasses || [];
+    document.querySelectorAll('.art-target-class-chk').forEach(chk => {
+        chk.checked = targets.includes(chk.value);
+    });
+    
+    document.getElementById('new-art-content-low').value = art.content.low || '';
+    document.getElementById('new-art-content-med').value = art.content.medium || '';
+    document.getElementById('new-art-content-high').value = art.content.high || '';
+    document.getElementById('new-art-time-low').value = art.times.low || 60;
+    document.getElementById('new-art-time-med').value = art.times.medium || 180;
+    document.getElementById('new-art-time-high').value = art.times.high || 300;
+    document.getElementById('new-art-link').value = art.fullArticleLink || '';
+    document.getElementById('new-art-status').value = art.status || 'published';
+    document.getElementById('new-art-lastmodified').value = art.lastModified || getFormattedCurrentDate();
+    document.getElementById('new-art-allow-retake').checked = !!art.allowRetake;
+    
+    // ⚠️ 關鍵修復：載入舊文章的題目內容
+    renderQuizEditorFields(art.quizzes);
+    
+    document.getElementById('publish-submit-btn').innerText = '💾 儲存並更新篇章設定';
+    document.getElementById('article-editor-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // ⚠️ 關鍵修復：延遲 0.1 秒自動觸發預覽，確保資料填入後才繪製畫面
+    setTimeout(() => {
+        generateManualPreview();
+    }, 100);
+}
+
+// 5. 取消編輯按鈕邏輯
+function cancelArticleEdit() {
+    document.getElementById('article-editor-card').style.display = 'none'; // 收起整個表單
+    editingArticleKey = null;
+}
+
 
     function toggleArticleStatus(key) {
         if (articlesData[key]) {
@@ -3552,83 +3639,12 @@ function changeTeacherArticlePage(targetPage) {
         };
 
         alert(`🎉 成功儲存篇章【${title}】！\n最後修訂日期已自動記錄為：${lastMod}`);
-        startNewArticleCreation();
+        cancelArticleEdit();
         refreshCategoryUIElements();
         renderArticleManagementList();
         populateTeacherArticlePickers();
         populateStudentArticleDropdown();
         saveAllDataToLocalStorage();
-    }
-
-    function previewArticle(key) {
-        const art = articlesData[key];
-        if (!art) return;
-        const panel = document.getElementById('teacher-article-preview-panel');
-        const gradesStr = Array.isArray(art.recommendedGrades) ? art.recommendedGrades.join('、') : (art.recommendedGrades || '全年級');
-        document.getElementById('preview-art-title').innerText = `📖 預覽：${art.title} [${art.category}] (建議年級：${gradesStr})`;
-        let html = `
-            <div style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin-bottom:12px; border:1px solid #e2e8f0;">
-                ⭐ <strong>推薦優先班級：</strong> ${(art.targetClasses && art.targetClasses.length > 0) ? art.targetClasses.join(', ') : '無（依年級推薦）'} | 
-                🕒 <strong>最後修訂日期：</strong> ${art.lastModified || '-'}
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px;">
-                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px;">
-                    <h5 style="margin:0 0 6px 0; color:#166534;">🟢 初階文本 (~150字)</h5>
-                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.low || '無內容'}</p>
-                </div>
-                <div style="background:#fefce8; border:1px solid #fef08a; padding:12px; border-radius:8px;">
-                    <h5 style="margin:0 0 6px 0; color:#854d0e;">🟡 進階文本 (~350字)</h5>
-                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.medium || '無內容'}</p>
-                </div>
-                <div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">
-                    <h5 style="margin:0 0 6px 0; color:#991b1b;">🔴 高階文本 (~600字)</h5>
-                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.high || '無內容'}</p>
-                </div>
-            </div>
-        `;
-        document.getElementById('preview-art-body').innerHTML = html;
-        panel.style.display = 'block';
-        panel.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function closeArticlePreview() {
-        document.getElementById('teacher-article-preview-panel').style.display = 'none';
-    }
-
-    function simulatePedagogicalAIGeneration() {
-        const raw = document.getElementById('raw-article-input').value.trim();
-        document.getElementById('new-art-content-low').value = raw ? 
-            `【初階淺白版·目標約150字】${raw.slice(0, 90)}…… (文字精簡，句式明快，聚焦核心脈絡與基礎事實)` : 
-            "初階探索文本：降低認知負荷，保留故事主幹與基礎事實，適合需要基礎閱讀鷹架支持之同學。";
-        document.getElementById('new-art-content-med').value = raw ? 
-            `【進階標準版·目標約350字】${raw.slice(0, 180)}…… (包含完整情節轉折、細節描寫與情感過渡)` : 
-            "進階理解文本：結構完整，兼具關鍵語譯與上下文因果關聯，考查細部理解與推論。";
-        document.getElementById('new-art-content-high').value = raw ? 
-            `【高階深度版·目標約600字】${raw} (保留古典名家原汁原味，附帶文學手法與深層寓意)` : 
-            "高階思維文本：深化篇章，包含複雜句式、隱喻象徵與結構對比，旨在引導評價反思。";
-
-        const simulatedQuizzes = {
-            low: [
-                { q: "文中開篇最核心陳述的事實焦點是什麼？", level: "retrieval", options: ["A. 時間與環境", "B. 核心人物形象", "C. 突發意外事件", "D. 旅途花費"], correct: 1, hint: "💡 提示：請回到文本第一段，找出反覆強調的核心焦點。" },
-                { q: "事件發生的前後順序與原因為何？", level: "retrieval", options: ["A. 因家庭變故而啟程", "B. 因出外遊玩而相遇", "C. 因迷路而停留", "D. 因工作晉升而慶祝"], correct: 0, hint: "💡 提示：留心文中敘述這趟旅程最初的成因。" },
-                { q: "從角色的具體行動中，可以推斷出何種情感？", level: "inference", options: ["A. 雙方缺乏信任", "B. 隱含的牽掛與關切", "C. 彼此感到不耐煩", "D. 為了節省開銷"], correct: 1, hint: "💡 提示：思考反覆確認的動作代表什麼心態？" }
-            ],
-            medium: [ // ▼▼▼【修正】補齊至 4 題 ▼▼▼
-                { q: "文本中所提及的關鍵事件細節為何？", level: "retrieval", options: ["A. 事件起因與交代", "B. 金錢數額", "C. 朋友的職業", "D. 行程的取消"], correct: 0, hint: "💡 提示：回讀第 1 段，確認起首所交代的事實。" },
-                { q: "透過人物的言語，能推敲出怎樣的內心狀態？", level: "inference", options: ["A. 掩飾擔憂以維持堅強", "B. 冷漠以對", "C. 埋怨生活艱難", "D. 慶幸逃過一劫"], correct: 0, hint: "💡 提示：想想在逆境中寬慰晚輩的心情。" },
-                { q: "文中某個角色的行為與他的話語形成了怎樣的對比？", level: "interpretation", options: ["A. 言語堅強，行動卻充滿不捨", "B. 言行一致，都表現出冷漠", "C. 說一套做一套，表裡不一", "D. 說話和氣，行動卻很粗魯"], correct: 0, hint: "💡 提示：對比他說的「不要緊」和實際的「躊躇」。" },
-                { q: "綜合本段情節，作者主要想營造何種氛圍？", level: "interpretation", options: ["A. 悲涼中的溫情", "B. 旅途的愉快", "C. 家庭的矛盾", "D. 社會的冷酷"], correct: 0, hint: "💡 提示：思考家庭變故與父子互動的整體感受。" }
-            ], // ▲▲▲【修正】補齊至 4 題 ▲▲▲
-            high: [ // ▼▼▼【修正】補齊至 5 題 ▼▼▼
-                { q: "細讀文本中的特定用詞，背後隱含著怎樣的境況？", level: "inference", options: ["A. 經濟困窘需借貸度日", "B. 官場得意", "C. 商賈雲集", "D. 隱居避世"], correct: 0, hint: "💡 提示：結合文中提到的典當與償債描寫。" },
-                { q: "文章開頭的敘事安排，在篇章結構上有何效果？", level: "interpretation", options: ["A. 倒敘入題，引導懸念與情感共鳴", "B. 篇末點題", "C. 平鋪直敘", "D. 借物抒情"], correct: 0, hint: "💡 提示：由現在回望過去的手法。" },
-                { q: "作者為何要補充說明自己「已二十歲，北京已來往過兩三次」？", level: "interpretation", options: ["A. 為了反襯父親關愛的深沉", "B. 為了炫耀自己的獨立", "C. 為了抱怨父親多此一舉", "D. 為了說明路途的遙遠"], correct: 0, hint: "💡 提示：成年兒子的獨立與父親的不放心，這種對比突顯了什麼？" },
-                { q: "從寫作手法的角度，你認為本文最突出的特色是什麼？", level: "evaluation", options: ["A. 透過樸實的細節描寫展現深厚情感", "B. 運用華麗的辭藻", "C. 充滿激烈的戲劇衝突", "D. 諷刺現實的黑暗"], correct: 0, hint: "💡 提示：思考作者是用大事還是小事來打動讀者。" },
-                { q: "如果你是文中的兒子，在當時你會如何回應父親的堅持？為什麼？", level: "evaluation", options: ["A. 順從並心懷感激", "B. 堅決拒絕以示獨立", "C. 假裝同意再自行離開", "D. 與父親爭論"], correct: 0, hint: "💡 提示：這是一道開放性評價題，請結合當時的情境與情感作答。" }
-            ] // ▲▲▲【修正】補齊至 5 題 ▲▲▲
-        };
-        renderQuizEditorFields(simulatedQuizzes);
-        alert('✨ AI 素養引擎已依據 PIRLS 架構自動產出三級文本與思維題目！(低:3, 中:4, 高:5)');
     }
 
 
@@ -4602,6 +4618,259 @@ function toggleArticleDateSort() {
         };
         reader.readAsText(file);
     }
+
+// 複製 Prompt 功能 (從 HTML 安全讀取)
+function copyPrompt() {
+    const promptArea = document.getElementById('hidden-ai-prompt');
+    if (!promptArea) { 
+        alert("找不到 Prompt 存放區！"); 
+        return; 
+    }
+    navigator.clipboard.writeText(promptArea.value.trim()).then(() => {
+        alert('✅ Prompt 已成功複製！');
+    }).catch(err => {
+        alert('複製失敗，請手動複製。');
+    });
+}
+
+
+// 1. 控制【審核編輯區】的展開與收起
+function toggleEditor() {
+    const editor = document.getElementById('editor-container');
+    const btn = document.getElementById('btn-show-editor');
+    if (editor.style.display === 'none') {
+        editor.style.display = 'block';
+        btn.innerText = '收起修訂區';
+    } else {
+        editor.style.display = 'none';
+        btn.innerText = '✏️ 需修訂內容或題目';
+    }
+}
+
+// 2. 點擊更新預覽後，自動往上滑順捲動到【預覽畫面顯示區】
+function generateManualPreviewAndScroll() {
+    generateManualPreview();
+    const previewBox = document.getElementById('ai-proofread-preview-container');
+    if (previewBox) {
+        previewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+
+// 手動抓取畫面上的輸入框內容，重新生成預覽畫面
+function generateManualPreview() {
+    // 1. 清空舊的預覽
+    let previewBox = document.getElementById('ai-proofread-preview-container');
+    if (previewBox) previewBox.innerHTML = '';
+    
+    // 2. 抓取目前的標題
+    const title = document.getElementById('new-art-title') ? document.getElementById('new-art-title').value : "未命名文章";
+    const diffNames = { 'low': '低階', 'medium': '進階', 'high': '高階' };
+    
+    // 3. 依序抓取三種難度的資料
+    ['low', 'medium', 'high'].forEach(sysDiff => {
+        const contentInput = document.getElementById(`new-art-content-${sysDiff === 'medium' ? 'med' : sysDiff}`);
+        if (!contentInput || !contentInput.value.trim()) return; // 如果這個難度沒有內容就跳過
+        
+        let targetData = {
+            wordCount: contentInput.value.length + " 字",
+            content: contentInput.value,
+            questions: []
+        };
+        
+        // 抓取該難度的題目
+        const titles = document.querySelectorAll(`.edit-q-title-${sysDiff}`);
+        const levels = document.querySelectorAll(`.edit-q-level-${sysDiff}`);
+        const optsList = document.querySelectorAll(`.edit-q-opts-${sysDiff}`);
+        const corrects = document.querySelectorAll(`.edit-q-correct-${sysDiff}`);
+        
+        titles.forEach((t, idx) => {
+            if (!t.value.trim()) return;
+            
+            // 處理選項 (兼容全形與半形逗號)
+            let opts = optsList[idx].value.split('，').map(s => s.trim());
+            if(opts.length < 4) opts = optsList[idx].value.split(',').map(s => s.trim()); 
+            
+            let ansIdx = parseInt(corrects[idx].value) || 0;
+            let ansLetter = ['A', 'B', 'C', 'D'][ansIdx];
+            
+            targetData.questions.push({
+                question: t.value,
+                pirls_type: levels[idx] ? levels[idx].value : '未分類',
+                options: { 'A': opts[0]||'', 'B': opts[1]||'', 'C': opts[2]||'', 'D': opts[3]||'' },
+                answer: ansLetter
+            });
+        });
+        
+        // 呼叫原本寫好的渲染函數
+        if (typeof renderProofreadPreview === 'function') {
+            renderProofreadPreview(targetData, diffNames[sysDiff], title);
+        }
+    });
+    
+    alert("✅ 預覽畫面已根據您剛剛的修改更新完成！");
+}
+
+
+// 1. 自動解析 JSON 並填入欄位的核心函數
+function parseAndFillAI() {
+    const jsonStr = document.getElementById('ai-json-input').value.trim();
+    if (!jsonStr) { alert("請先貼上 AI 產生的 JSON 內容！"); return; }
+    try {
+        const cleanJsonStr = jsonStr.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+        const aiData = JSON.parse(cleanJsonStr);
+
+        const finalTitle = aiData.articleTitle || aiData.topic || "AI 生成閱讀篇章";
+        const titleInput = document.getElementById('new-art-title');
+        if (titleInput) titleInput.value = finalTitle; 
+
+        const diffMap = { 'low': 'low', 'mid': 'medium', 'high': 'high' };
+        const levelNames = { 'low': '低階', 'mid': '進階', 'high': '高階' };
+        
+        const pirlsMap = {
+            "提取": "retrieval", "推論": "inference", 
+            "詮釋": "interpretation", "整合": "interpretation",
+            "評估": "evaluation", "批判": "evaluation"
+        };
+
+        let previewBox = document.getElementById('ai-proofread-preview-container');
+        if (previewBox) previewBox.innerHTML = '';
+
+        ['low', 'mid', 'high'].forEach(jsonKey => {
+            const sysDiff = diffMap[jsonKey];
+            const targetData = aiData.versions[jsonKey];
+            const levelName = levelNames[jsonKey]; 
+            
+            if (targetData) {
+                const contentId = `new-art-content-${sysDiff === 'medium' ? 'med' : sysDiff}`;
+                const contentInput = document.getElementById(contentId);
+                if (contentInput) contentInput.value = targetData.content.replace(/\\n/g, '\n');
+
+                const titles = document.querySelectorAll(`.edit-q-title-${sysDiff}`);
+                const levels = document.querySelectorAll(`.edit-q-level-${sysDiff}`);
+                const corrects = document.querySelectorAll(`.edit-q-correct-${sysDiff}`);
+                const optsList = document.querySelectorAll(`.edit-q-opts-${sysDiff}`);
+                const hints = document.querySelectorAll(`.edit-q-hint-${sysDiff}`);
+
+                (targetData.questions || []).forEach((q, idx) => {
+                    if (titles[idx]) {
+                        titles[idx].value = q.question;
+                        
+                        const optA = (q.options.A || '').replace(/,/g, '，');
+                        const optB = (q.options.B || '').replace(/,/g, '，');
+                        const optC = (q.options.C || '').replace(/,/g, '，');
+                        const optD = (q.options.D || '').replace(/,/g, '，');
+                        optsList[idx].value = `${optA}, ${optB}, ${optC}, ${optD}`;
+                        
+                        const ansMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                        corrects[idx].value = ansMap[q.answer] !== undefined ? ansMap[q.answer] : 0;
+                        
+                        let pLevel = 'retrieval'; 
+                        for (let key in pirlsMap) {
+                            if (q.pirls_type && q.pirls_type.includes(key)) {
+                                pLevel = pirlsMap[key];
+                                break;
+                            }
+                        }
+                        levels[idx].value = pLevel;
+                        hints[idx].value = `💡 思考線索：請回到文本中尋找關於「${q.question.substring(0,10)}...」的細節。`;
+                    }
+                });
+
+                if (typeof renderProofreadPreview === 'function') {
+                    renderProofreadPreview(targetData, levelName, finalTitle);
+                }
+            }
+        });
+
+        // 🌟 模擬滑鼠自動點擊展開按鈕
+        setTimeout(() => {
+            // 尋找網頁上所有帶有「展開/收合」或有 data-bs-toggle 屬性的按鈕
+            const expandButtons = document.querySelectorAll('button, a, [data-toggle="collapse"], [data-bs-toggle="collapse"]');
+            
+            expandButtons.forEach(btn => {
+                const btnText = btn.innerText || btn.textContent || "";
+                // 如果按鈕文字包含「展開」，且目前是關閉狀態 (collapsed)，就點擊它！
+                if (btnText.includes('展開') || btn.classList.contains('collapsed') || btn.getAttribute('aria-expanded') === 'false') {
+                    btn.click(); // 代替你按下這個按鈕
+                }
+            });
+        }, 300); // 延遲 0.3 秒執行，確保內容都填完了才按
+
+        // 確保這裡只有一個 alert
+        alert(`✅ 魔法發生了！\n\n系統已成功解析並自動為你填妥：\n- 三級文章內容\n- 共計 12 條測驗題目、選項與 PIRLS 標籤！\n\n請老師快速檢查後即可按下儲存發佈！`);
+
+    } catch (e) {
+        console.error("解析失敗:", e);
+        alert("❌ JSON 解析失敗！請確認貼上的文字是乾淨的 JSON 格式。");
+    }
+}
+
+
+// 取代原本的 renderProofreadPreview 函數
+function renderProofreadPreview(targetData, levelName, title) {
+    let previewBox = document.getElementById('ai-proofread-preview-container');
+    if (!previewBox) return;
+
+    // 根據難度設定對應的顏色樣式 (綠/黃/紅)
+    let bgColor = '#ffffff';
+    let borderColor = '#e2e8f0';
+    let textColor = '#334155';
+    let icon = '📖';
+
+    if (levelName.includes('低階') || levelName.includes('初階')) {
+        bgColor = '#f0fdf4';
+        borderColor = '#bbf7d0';
+        textColor = '#166534';
+        icon = '🟢';
+    } else if (levelName.includes('進階')) {
+        bgColor = '#fefce8';
+        borderColor = '#fef08a';
+        textColor = '#854d0e';
+        icon = '🟡';
+    } else if (levelName.includes('高階')) {
+        bgColor = '#fef2f2';
+        borderColor = '#fecaca';
+        textColor = '#991b1b';
+        icon = '🔴';
+    }
+
+    let questionsHtml = '';
+    (targetData.questions || []).forEach((q, i) => {
+        questionsHtml += `
+            <div style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.6); border-radius: 6px; border: 1px dashed ${borderColor};">
+                <p style="font-weight: bold; margin: 0 0 10px 0; color: ${textColor};">Q${i+1}. ${q.question} <span style="font-size: 0.85em; opacity: 0.8; font-weight: normal;">[${q.pirls_type}]</span></p>
+                <ul style="list-style: none; padding: 0; margin: 0; line-height: 1.6; color: #334155;">
+                    <li style="${q.answer === 'A' ? 'color: #166534; font-weight: bold;' : ''}">A. ${q.options.A} ${q.answer === 'A' ? '✅' : ''}</li>
+                    <li style="${q.answer === 'B' ? 'color: #166534; font-weight: bold;' : ''}">B. ${q.options.B} ${q.answer === 'B' ? '✅' : ''}</li>
+                    <li style="${q.answer === 'C' ? 'color: #166534; font-weight: bold;' : ''}">C. ${q.options.C} ${q.answer === 'C' ? '✅' : ''}</li>
+                    <li style="${q.answer === 'D' ? 'color: #166534; font-weight: bold;' : ''}">D. ${q.options.D} ${q.answer === 'D' ? '✅' : ''}</li>
+                </ul>
+            </div>
+        `;
+    });
+
+    // 注意：這裡使用反引號 (`) 包住 HTML
+    previewBox.innerHTML += `
+        <div style="background: ${bgColor}; border: 2px solid ${borderColor}; border-radius: 8px; padding: 20px; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h3 style="margin-top: 0; border-bottom: 1px solid ${borderColor}; padding-bottom: 10px; color: ${textColor};">
+                ${icon} 校對預覽：${title} <span style="font-size: 0.75em; opacity: 0.8;">(${levelName}版 - ${targetData.wordCount})</span>
+            </h3>
+            
+            <h4 style="color: ${textColor}; margin-bottom: 10px;">📝 文章內容</h4>
+            <div style="font-size: 15.5px; line-height: 1.8; color: #1e293b; white-space: pre-wrap; background: rgba(255,255,255,0.7); padding: 15px; border-radius: 6px; border: 1px solid ${borderColor};">
+${targetData.content.replace(/\\n/g, '\n')}
+            </div>
+
+            <h4 style="color: ${textColor}; margin-top: 20px; margin-bottom: 10px;">📋 題目與解答</h4>
+            ${questionsHtml}
+        </div>
+    `;
+    
+    // 預覽產生後，顯示最下方的發布區
+    document.getElementById('publish-action-area').style.display = 'block';
+}
+
     /* ========================================================
        11. 🖨️ 即印即派：產生與列印個人 A4 報告功能
     ======================================================== */
@@ -4754,9 +5023,63 @@ function toggleArticleDateSort() {
     // 🚀 網頁啟動時，立刻觸發雲端讀取與初始化！(這行最重要)
     loadDataFromLocalStorage();
 
+
 </script>
 <!-- ▼▼▼【新增】列印專用隱藏容器 ▼▼▼ -->
 <div id="print-area"></div>
+<!-- ▼▼▼ 隱藏的 Prompt 存放區，絕對避免 JS 引號衝突報錯 ▼▼▼ -->
+<textarea id="hidden-ai-prompt" style="display: none;">
+# 角色設定
+你是一位資深的中學中文科教師、教育測評專家，並且精通國際閱讀素養進展研究（PIRLS）的閱讀理解歷程框架。你的任務是協助香港中學教師根據不同學生的學習需要，尋找或改寫文章、調節難度並設置符合 PIRLS 框架的選擇題。
+
+# 輸入變數（由使用者提供）
+【選項 A：指定文本】原文標題與內容：{user_input_text_or_topic}
+【選項 B：指定主題】請尋找真實存在的文章，主題為：{user_input_topic}
+（註：使用者通常只會提供 A 或 B 其中一項）
+- 目標年級：{target_grade} （例如：中六）
+- 學生背景與能力分層說明：
+  低階：針對有特殊學習需要（SEN）或語文基礎較薄弱的學生。
+  進階：針對學習進度中等或稍弱的主流學生。
+  高階：針對能力較強、追求深度思辨的主流學生。
+
+# 核心任務與規範（嚴格遵守）
+1. 文本來源處理：
+   - 若使用者提供【選項 A】，請直接以此文本進行難度改寫。
+   - 若使用者提供【選項 B】，請搜尋並選用一篇符合主題且「真實存在」的優質文章，並明確標示標題與原作者。
+2. 免責聲明與出處（不計入字數）：
+   - 在每個層階的 `content` 結尾，必須換行並加上這段文字：「(註：本文由 AI 調整生成。原出處：[填入原作者/書名或真實來源])」。
+3. 文章層階設計：
+   - 低階：約 250 - 350 字。句構極短小直接，剔除艱澀學術詞彙，主打直觀易讀。。
+   - 進階：約 450 - 550 字。保留核心概念，句構流暢，著重因果與細節。
+   - 高階：約 700 - 800 字。具學術厚度與思辨性，用字精鍊。用字與程度為流暢、自然、具啟發性，不使用過度晦澀或生硬的學術大詞，但具備清晰的行文脈絡、段落轉折與深層的觀點對比（如傳統觀點與新發現的衝突、個體與群體的辯證）。
+4. PIRLS 閱讀理解題目與題量：
+   - 低階 3 題 / 進階 4 題 / 高階 5 題。
+   - 必須有 4 個選項 (A,B,C,D) 並標明正確答案與 PIRLS 題目類型。
+
+# 輸出格式
+請務必只輸出合法的 JSON 格式，不要包含任何解釋性文字，不要加上 ```json 標籤，必須嚴格符合以下結構：
+{
+  "topic": "文章主題",
+  "articleTitle": "最終確定的文章標題 (若有作者請加上，如：背影 - 朱自清)",
+  "versions": {
+    "low": {
+      "wordCount": "約300字",
+      "content": "低階版文章完整內容...\n\n(註：本文由 AI 調整生成。原出處：...)",
+      "questions": [
+        {
+          "question": "題目描述...",
+          "options": {"A": "選項A", "B": "選項B", "C": "選項C", "D": "選項D"},
+          "answer": "A",
+          "pirls_type": "提取明確陳述的資訊"
+        }
+      ]
+    },
+    "mid": { "wordCount": "約500字", "content": "...", "questions": [] },
+    "high": { "wordCount": "約750字", "content": "...", "questions": [] }
+  }
+}
+</textarea>
+<!-- ▲▲▲ 隱藏的 Prompt 存放區 ▲▲▲ -->
 
 </body>
 </html>
