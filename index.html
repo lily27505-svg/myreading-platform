@@ -1414,6 +1414,12 @@ let quizSession = {
                     };
                     
                     safeRun(updateRosterClassFilters, 'updateRosterClassFilters');
+					safeRun(renderTeacherClassFilterCheckboxes, 'renderTeacherClassFilterCheckboxes');
+                    safeRun(renderTargetClassCheckboxes, 'renderTargetClassCheckboxes');
+                    safeRun(renderBatchTargetClassCheckboxes, 'renderBatchTargetClassCheckboxes');
+                    safeRun(refreshCategoryUIElements, 'refreshCategoryUIElements');
+                    safeRun(renderTeacherRewardsList, 'renderTeacherRewardsList');
+                    safeRun(renderTeacherRewardsAdmin, 'renderTeacherRewardsAdmin');
                     safeRun(renderRosterPreview, 'renderRosterPreview');
                     safeRun(populateTeacherStudentPickers, 'populateTeacherStudentPickers');
                     safeRun(renderStudentCheckboxList, 'renderStudentCheckboxList');
@@ -3022,8 +3028,13 @@ function handleNextArticleAfterCompletion() {
     function renderMultiClassAnalytics() {
         const container = document.getElementById('class-analytics-content');
         const selectedClasses = Array.from(document.querySelectorAll('.class-filter-chk:checked')).map(c => c.value);
-        if (selectedClasses.length === 0) return;
-        const filteredStudents = rosterData.filter(s => selectedClasses.includes(s.class));
+         // ▼▼▼【新增】當沒有任何班級被勾選時，顯示友善提示而不是空白 ▼▼▼
+        if (selectedClasses.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:30px; color:#64748b; font-size:1.1em; background:#f8fafc; border-radius:8px;">⚠️ 請先在上方至少勾選一個班級，以顯示分析數據。</div>';
+            return;
+        }
+        // ▼▼▼【優化】加強班級字串比對，忽略大小寫與多餘空白 ▼▼▼
+        const filteredStudents = rosterData.filter(s => selectedClasses.includes(String(s.class || '').toUpperCase().trim()));
         
         let agg = { retrieval: {c:0,t:0}, inference: {c:0,t:0}, interpretation: {c:0,t:0}, evaluation: {c:0,t:0} };
         filteredStudents.forEach(st => {
