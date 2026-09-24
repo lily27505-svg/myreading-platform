@@ -649,7 +649,22 @@
                     </div>
                     <span style="font-size: 0.85em; color: #64748b;">💡 診斷面板將依據篩選條件，即時計算選項選擇分佈</span>
                 </div>
-                <div id="article-analytics-content"></div>
+		                <!-- ▼▼▼ 預覽面板 (修改為懸浮視窗 Modal) ▼▼▼ -->
+                <div id="teacher-article-preview-panel" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); z-index: 9999; justify-content: center; align-items: center;">
+                    <div class="card" style="background: #fdfefe; border: 2px solid #6366f1; width: 90%; max-width: 1000px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; position: sticky; top: 0; background: #fdfefe; z-index: 10; padding-top: 10px;">
+                            <h3 id="preview-art-title" style="margin: 0; color: #4338ca;">📖 篇章全文與完整測驗題目預覽</h3>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="closeArticlePreview()">✖ 關閉預覽</button>
+                        </div>
+                        <div id="preview-art-body" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+                <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+
+
+               <div id="article-analytics-content"></div>
+
+
             </div>
             <!-- 學生檢視 -->
             <div id="subview-by-student" class="card" style="display: none;">
@@ -830,6 +845,7 @@
 		<div id="teacher-article-management-pagination"></div>
 		<!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
             </div>
+
 
 
 <div class="card" id="article-editor-card" style="display: none;">
@@ -1876,6 +1892,15 @@ function toggleBatchGradeGroup(mode) {
         document.getElementById('login-card').style.display = 'block';
         window.location.reload();
     }
+
+    function updatePointsDisplay() {
+        const totalPtsEl = document.getElementById('user-total-points');
+        const currentPtsEl = document.getElementById('user-points');
+        
+        if (totalPtsEl) totalPtsEl.innerText = totalPoints;
+        if (currentPtsEl) currentPtsEl.innerText = points;
+    }
+
 
     /* ========================================================
        4. 學生端核心流程 (階梯閱讀、連續滿分升級判定)
@@ -3009,20 +3034,66 @@ function handleNextArticleAfterCompletion() {
                 <h4 style="margin:0;">📜 挑戰歷程明細與 PIRLS 答題結果：</h4>
                 <button type="button" class="btn btn-sm" style="background:#0f172a; color:white;" onclick="printStudentReport('${username}')">🖨️ 列印個人 A4 報告</button></div>`;
         
-        subs.forEach(s => {
-            const art = articlesData[s.articleKey]; const title = art ? art.title : s.articleKey;
-            const diffLabel = s.diff === 'low' ? '(初階)' : (s.diff === 'medium' ? '(進階)' : (s.diff === 'high' ? '(高階)' : ''));
-            
-            html += `<div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:12px;"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="color:#1e40af; font-size:1.05em;">${title} <span style="color:#64748b; font-weight:normal;">${diffLabel}</span></strong><span>${s.submittedAt}</span></div>`;
-            if (s.diff !== 'manual_bonus' && art && art.quizzes && art.quizzes[s.diff]) {
-                html += `<div style="font-size:0.95em; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px;">`;
-                art.quizzes[s.diff].forEach((q, idx) => {
-                    const picked = s.optionsPicked ? s.optionsPicked[idx] : null; const isCorrect = (picked === q.correct);
-                    html += `<div style="background:#f8fafc; padding:6px; border:1px solid #e2e8f0;">${PIRLS_LABELS[q.level]?.name}: ${isCorrect ? '✅' : '❌'}</div>`;
-                }); html += `</div>`;
-            } html += `</div>`;
-        }); container.innerHTML = html;
+        // ▼▼▼ 改為表格排版 (完成時間在最後一欄) ▼▼▼
+        html += `<table class="data-table" style="margin-top: 15px;">
+            <thead>
+                <tr>
+                    <!-- 調整 width 的百分比即可控制欄位寬度 -->
+                    <th style="width: 36%;">篇章名稱 (難度)</th>
+                    <th style="text-align:center; width: 12%;">提取訊息</th>
+                    <th style="text-align:center; width: 12%;">直接推論</th>
+                    <th style="text-align:center; width: 12%;">統整解釋</th>
+                    <th style="text-align:center; width: 12%;">評價反思</th>
+                    <th style="text-align:center; width: 15%;">完成時間</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        if (subs.length === 0) {
+            html += `<tr><td colspan="6" style="text-align:center; color:#64748b;">該時段內尚無閱讀測驗紀錄</td></tr>`;
+        } else {
+            subs.forEach(s => {
+                const art = articlesData[s.articleKey]; 
+                const title = art ? art.title : s.articleKey;
+                const diffLabel = s.diff === 'low' ? '(初階)' : (s.diff === 'medium' ? '(進階)' : (s.diff === 'high' ? '(高階)' : ''));
+                
+                let itemStats = { retrieval: {c:0,t:0}, inference: {c:0,t:0}, interpretation: {c:0,t:0}, evaluation: {c:0,t:0} };
+
+                // 計算該篇文章各個 PIRLS 維度的答對率
+                if (s.diff !== 'manual_bonus' && art && art.quizzes && art.quizzes[s.diff]) {
+                    const qList = art.quizzes[s.diff];
+                    qList.forEach((q, idx) => {
+                        const lvl = q.level || 'retrieval';
+                        itemStats[lvl].t++;
+                        if (s.optionsPicked && s.optionsPicked[idx] === q.correct) itemStats[lvl].c++;
+                    });
+                }
+
+                // 計算百分比並加上顏色 (>=60% 為綠色，低於則為紅色)
+                const getRate = (lvl) => {
+                    if (s.diff === 'manual_bonus') return '-';
+                    if (itemStats[lvl].t === 0) return '-';
+                    const rate = Math.round((itemStats[lvl].c / itemStats[lvl].t) * 100);
+                    const color = rate >= 60 ? '#166534' : '#dc2626';
+                    return `<strong style="color:${color};">${rate}%</strong>`;
+                };
+
+                html += `<tr>
+                    <td><strong style="color:#1e40af;">${title}</strong> <small style="color:#64748b;">${diffLabel}</small></td>
+                    <td style="text-align:center;">${getRate('retrieval')}</td>
+                    <td style="text-align:center;">${getRate('inference')}</td>
+                    <td style="text-align:center;">${getRate('interpretation')}</td>
+                    <td style="text-align:center;">${getRate('evaluation')}</td>
+                    <td style="text-align:center; color:#64748b; font-size:0.9em;">${s.submittedAt}</td>
+                </tr>`;
+            });
+        }
+        
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        // ▲▲▲ 改為表格排版 ▲▲▲
     }
+
 
     // 📝 升級 3：多班級分析新增頂部「PIRLS 四大維度總平均」
     function renderMultiClassAnalytics() {
@@ -3414,6 +3485,18 @@ function renderArticleManagementList() {
                         ${isPub ? '🔒 下架' : '🚀 上架'}
                     </button>
                     <button type="button" class="btn btn-sm btn-danger" onclick="deleteArticle('${key}')" style="background-color:#991b1b; margin-left:2px;">🗑️ 刪除</button>
+                        <!-- ▼▼▼ 新增：列印工作紙小模組 ▼▼▼ -->
+                        <div style="display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; background: #f8fafc; margin-top: 4px;">
+                            <select id="print-diff-${key}" style="border: none; background: transparent; padding: 2px 4px; font-size: 0.85em; outline: none; cursor: pointer;">
+                                <option value="low">初階</option>
+                                <option value="medium">進階</option>
+                                <option value="high">高階</option>
+                            </select>
+                            <button type="button" class="btn btn-sm" style="background: #0ea5e9; color: white; padding: 3px 6px; font-size: 0.8em;" onclick="printWorksheet('${key}', document.getElementById('print-diff-${key}').value)">
+                                🖨️ 印工作紙
+                            </button>
+                        </div>
+                        <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
                 </td>
             </tr>
         `;
@@ -3656,6 +3739,40 @@ function cancelArticleEdit() {
         populateTeacherArticlePickers();
         populateStudentArticleDropdown();
         saveAllDataToLocalStorage();
+    }
+
+    function previewArticle(key) {
+        const art = articlesData[key];
+        if (!art) return;
+        const panel = document.getElementById('teacher-article-preview-panel');
+        const gradesStr = Array.isArray(art.recommendedGrades) ? art.recommendedGrades.join('、') : (art.recommendedGrades || '全年級');
+        document.getElementById('preview-art-title').innerText = `📖 預覽：${art.title} [${art.category}] (建議年級：${gradesStr})`;
+        let html = `
+            <div style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin-bottom:12px; border:1px solid #e2e8f0;">
+                ⭐ <strong>推薦優先班級：</strong> ${(art.targetClasses && art.targetClasses.length > 0) ? art.targetClasses.join(', ') : '無（依年級推薦）'} | 
+                🕒 <strong>最後修訂日期：</strong> ${art.lastModified || '-'}
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px;">
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px;">
+                    <h5 style="margin:0 0 6px 0; color:#166534;">🟢 初階文本 (~150字)</h5>
+                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.low || '無內容'}</p>
+                </div>
+                <div style="background:#fefce8; border:1px solid #fef08a; padding:12px; border-radius:8px;">
+                    <h5 style="margin:0 0 6px 0; color:#854d0e;">🟡 進階文本 (~350字)</h5>
+                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.medium || '無內容'}</p>
+                </div>
+                <div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">
+                    <h5 style="margin:0 0 6px 0; color:#991b1b;">🔴 高階文本 (~600字)</h5>
+                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.high || '無內容'}</p>
+                </div>
+            </div>
+        `;
+        document.getElementById('preview-art-body').innerHTML = html;
+        panel.style.display = 'flex';
+    }
+
+    function closeArticlePreview() {
+        document.getElementById('teacher-article-preview-panel').style.display = 'none';
     }
 
 
@@ -5033,6 +5150,121 @@ ${targetData.content.replace(/\\n/g, '\n')}
 
     // 🚀 網頁啟動時，立刻觸發雲端讀取與初始化！(這行最重要)
     loadDataFromLocalStorage();
+
+    // 🖨️ 產生並列印實體工作紙 (省略最外框 + 增加文本獨立外框 + 動態排版)
+    function printWorksheet(articleKey, diff) {
+        const art = articlesData[articleKey];
+        if (!art) return;
+        
+        const diffName = diff === 'low' ? '初階' : (diff === 'medium' ? '進階' : '高階');
+        const questions = art.quizzes[diff] || [];
+
+        // 📝 針對不同難度設定動態排版變數
+        let config = {
+            baseFont: '14pt',       // 基礎內文字體
+            titleFont: '16pt',      // 區塊標題字體
+            lineHeight: '1.8',      // 內文行距
+            qMargin: '25px',        // 題目與題目之間的間距
+            optMargin: '8px',       // 選項行與行之間的間距
+            optCols: '100%'         // 選項欄位寬度 (100%=單欄直排, 50%=雙欄並排)
+        };
+
+        if (diff === 'low') {
+            config.baseFont = '15pt';
+            config.lineHeight = '2';
+            config.optCols = '100%'; 
+        } else if (diff === 'medium') {
+            config.baseFont = '13.5pt';
+            config.lineHeight = '1.7';
+            config.optCols = '50%';  
+            config.qMargin = '18px';
+        } else if (diff === 'high') {
+            config.baseFont = '12pt'; 
+            config.titleFont = '14pt';
+            config.lineHeight = '1.5';
+            config.optCols = '50%';
+            config.qMargin = '15px';
+            config.optMargin = '4px';
+        }
+
+        // 組合題目區域
+        let qHtml = '';
+        if (questions.length === 0) {
+            qHtml = `<p style="font-size: ${config.baseFont};">本篇章尚未設定題目。</p>`;
+        } else {
+            questions.forEach((q, idx) => {
+                const pirlsInfo = PIRLS_LABELS[q.level] || { name: '閱讀理解' };
+                qHtml += `
+                    <div style="margin-bottom: ${config.qMargin}; break-inside: avoid; page-break-inside: avoid;">
+                        
+                        <!-- 題幹 -->
+                        <div style="font-weight: bold; font-size: ${config.baseFont}; margin-bottom: 8px; line-height: 1.4;">
+                            ${idx + 1}. ${q.q} <span style="font-size: 0.85em; color: #555; font-weight: normal;">[${pirlsInfo.name}]</span>
+                        </div>
+                        
+                        <!-- 選項區域 (完美的懸掛縮排) -->
+                        <div style="margin-left: 15px; line-height: 1.5; font-size: ${config.baseFont}; display: flex; flex-wrap: wrap;">
+                            ${['A', 'B', 'C', 'D'].map((letter, i) => `
+                                <div style="width: ${config.optCols}; margin-bottom: ${config.optMargin}; display: flex; align-items: flex-start;">
+                                    <div style="width: 25px; flex-shrink: 0;">${letter}.</div>
+                                    <div style="flex: 1;">${q.options[i]}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <!-- ▼ 作答括號移至這裡：在選項最後方靠右對齊 ▼ -->
+                        <div style="text-align: right; font-size: ${config.baseFont}; margin-top: 4px; padding-right: 15px;">
+                            (&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)
+                        </div>
+                        
+                    </div>
+                `;
+            });
+        }
+
+        // 組合整份工作紙的 HTML
+        // 修改亮點 1: border: none !important 省略外框，padding: 5mm 10mm 拓展可用版面
+        const html = `
+            <div class="print-card" style="border: none !important; padding: 5mm 10mm; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;">
+                
+                <!-- 標題與抬頭 -->
+                <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+                    <h1 style="margin: 0 0 8px 0; font-size: 20pt;">閱讀理解訓練工作紙</h1>
+                    <h2 style="margin: 0; font-size: 15pt; color: #333;">《${art.title}》— ${diffName}挑戰</h2>
+                </div>
+                
+                <!-- 姓名班級欄位 -->
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14pt; line-height: 2;">
+                    <div style="flex: 1;">班級：___________________</div>
+                    <div style="flex: 1; text-align: center;">座號：_____________</div>
+                    <div style="flex: 1.5; text-align: center;">姓名：_________________________</div>
+                    <div style="flex: 1; text-align: right;">得分：____________ / ${questions.length * 10}</div>
+                </div>
+                
+                <!-- 閱讀篇章區塊 -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 10px; font-size: ${config.titleFont};">📖 閱讀篇章</h3>
+                    
+                    <!-- 修改亮點 2: 為文本加上實體框線 (border: 2px solid #000) 並增加 padding -->
+                    <div style="border: 2px solid #000; border-radius: 8px; padding: 15px 20px; line-height: ${config.lineHeight}; font-size: ${config.baseFont}; white-space: pre-wrap; text-align: justify; box-sizing: border-box;">${art.content[diff]}</div>
+                </div>
+
+                <!-- 選擇題區塊 -->
+                <div>
+                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 15px; font-size: ${config.titleFont};">📝 選擇題</h3>
+                    ${qHtml}
+                </div>
+                
+                <!-- 頁尾 -->
+                <div style="text-align: center; color: #666; font-size: 9pt; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 15px;">
+                    - 炮台山循道衛理中學 閱讀平台自動生成 -
+                </div>
+            </div>
+        `;
+
+        document.getElementById('print-area').innerHTML = html;
+        window.print();
+    }
 
 
 </script>
