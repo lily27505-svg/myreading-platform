@@ -459,10 +459,33 @@
             transform: scale(1.05) !important;
         }
 
+        /* =========================================================
+           🅰️ 字體縮放控制器專用樣式
+        ========================================================= */
+        .font-control-group {
+            display: inline-flex;
+            gap: 4px;
+            background-color: #f1f5f9;
+            padding: 5px;
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        .font-control-group .btn {
+            min-width: 40px; /* 確保按鈕不會太窄 */
+            font-weight: bold;
+            font-size: 1em;
+        }
+
 
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- ▼▼▼【第一步：在這裡加入新的函式庫】▼▼▼ -->
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+
 </head>
 
 <body>
@@ -598,6 +621,15 @@
                             <h3 id="article-title" style="margin: 0; color: #0f172a; display: inline-block;">文章標題</h3>
                             <span id="article-meta-badge" style="font-size: 0.8em; margin-left: 8px;"></span>
                         </div>
+                   <!-- ▼▼▼【第一步：在這裡加入新的 HTML 按鈕】▼▼▼ -->
+                    <div id="font-controls" class="font-control-group">
+                        <span style="font-size: 0.9em; color: #475569; margin-right: 5px;">字體：</span>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="changeFontSize(-1)">A-</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="resetFontSize()">重設</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="changeFontSize(1)">A+</button>
+                    </div>
+                    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+
                         <span id="current-word-count" style="font-size: 0.85em; background: #e2e8f0; padding: 4px 8px; border-radius: 4px;">字數: 0 字</span>
                     </div>
                     <p id="article-body" style="line-height: 1.85; font-size: 1.05em; color: #334155; background: #fdfdfd; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; white-space: pre-wrap; margin-top: 12px;"></p>
@@ -1597,7 +1629,7 @@ let quizSession = {
     }
 
 
-
+    let currentFontSizeLevel = 0; // 0 = 預設, 正數 = 放大, 負數 = 縮小
     let currentRole = 'student';
     let currentStudentUsername = 'chan_xm';
     let currentStudentName = '陳小明';
@@ -2490,6 +2522,8 @@ function selectDifficulty(diff) {
 // 確認難度，正式解鎖篇章並計時
 function confirmDifficulty() {
     if (quizSession.isConfirmed) return;
+
+     resetFontSize(); // 🟢 在這裡加入重設功能
 
     const student = rosterData.find(r => r.username === currentStudentUsername);
     // 重做防負分第二道防線：再次確認積分是否足夠
@@ -3741,11 +3775,16 @@ function renderArticleManagementList() {
                         <button class="btn btn-primary btn-sm" onclick="printWorksheet('${key}', document.getElementById('print_diff_${key}').value)">
                             <i class="fa-solid fa-print"></i> 印工作紙
                         </button>
+                        <!-- 🟢 新增：Word 匯出按鈕 -->
+                        <button class="btn btn-sm" style="background-color: #2b579a; color: white;" onclick="exportWorksheetAsDocx('${key}', document.getElementById('print_diff_${key}').value)">
+                            <i class="fa-solid fa-file-word"></i> Word
+                        </button>
                     </div>
                 </td>      
             </tr>
         `;
     });
+
 
     // 6. 繪製並渲染表格下方的分頁控制列
     renderTeacherArticlePagination(totalPages, matchCount);
@@ -5519,6 +5558,194 @@ ${targetData.content.replace(/\\n/g, '\n')}
         document.getElementById('print-area').innerHTML = html;
         window.print();
     }
+
+/* ========================================================
+   🅰️ 字體縮放核心功能
+======================================================== */
+
+// 函數 1：改變字體大小
+function changeFontSize(step) {
+    // 限制最大放大與縮小級別 (可自行調整)
+    const MAX_LEVEL = 4; // 最多放大 4 級
+    const MIN_LEVEL = -2; // 最多縮小 2 級
+
+    currentFontSizeLevel += step;
+
+    if (currentFontSizeLevel > MAX_LEVEL) {
+        currentFontSizeLevel = MAX_LEVEL;
+    }
+    if (currentFontSizeLevel < MIN_LEVEL) {
+        currentFontSizeLevel = MIN_LEVEL;
+    }
+
+    applyFontSize();
+}
+
+// 函數 2：重設為預設大小
+function resetFontSize() {
+    currentFontSizeLevel = 0;
+    applyFontSize();
+}
+
+    // 函數 3：將字體大小實際應用到目標元素上（已完美對接您的題目 DOM 結構）
+    function applyFontSize() {
+        const targets = [
+            document.getElementById('article-body'),       // 1. 文章內文
+            document.getElementById('questions-container')  // 2. 整個題目容器
+        ];
+
+        // 預設字體大小 (rem 為單位)
+        const articleBaseSize = 1.05; // 文章預設 1.05rem
+        const quizBaseSize = 1.05;    // 題目與選項預設 1.05rem
+
+        // 每按一次的變化量
+        const stepAmount = 0.1; // 每級變化 0.1rem
+
+        // 計算最終字體大小
+        const finalArticleSize = articleBaseSize + (currentFontSizeLevel * stepAmount);
+        const finalQuizSize = quizBaseSize + (currentFontSizeLevel * stepAmount);
+
+        const articleBody = targets[0];
+        const quizContainer = targets[1];
+
+        // 1. 縮放文章內文
+        if (articleBody) {
+            articleBody.style.fontSize = `${finalArticleSize}rem`;
+        }
+
+        // 2. 縮放測驗題目與選項
+        if (quizContainer) {
+            // 🟢 針對您的題目結構：選取題目容器中所有 .quiz-item-box 底下的題目 <p> 標籤
+            const questionTexts = quizContainer.querySelectorAll('.quiz-item-box > p');
+            questionTexts.forEach(p => {
+                p.style.fontSize = `${finalQuizSize}rem`;
+            });
+
+            // 🟢 讓題目選項的字體也跟著變化
+            const optionLabels = quizContainer.querySelectorAll('.option-label');
+            optionLabels.forEach(label => {
+                label.style.fontSize = `${finalQuizSize}rem`;
+            });
+        }
+    }
+
+
+/* ========================================================
+   📄 匯出工作紙為 Word (.docx) 檔案 (高仿真印刷版)
+======================================================== */
+function exportWorksheetAsDocx(articleKey, diff) {
+    const art = articlesData[articleKey];
+    if (!art) {
+        alert('找不到該篇章的資料！');
+        return;
+    }
+
+    const diffName = diff === 'low' ? '初階' : (diff === 'medium' ? '進階' : '高階');
+    const questions = art.quizzes[diff] || [];
+
+    // 1. 組合題目區塊的 HTML (使用 table 進行排版)
+    let qHtml = '';
+    questions.forEach((q, idx) => {
+        const pirlsInfo = PIRLS_LABELS[q.level] || { name: '閱讀理解' };
+        
+        // 模擬雙欄排版
+        let optionsHtml = '<table style="width: 100%;"><tr>';
+        if (diff === 'low') { // 低階：單欄
+             optionsHtml = q.options.map((opt, i) => `<p style="margin: 4px 0;">${String.fromCharCode(65 + i)}. ${opt}</p>`).join('');
+        } else { // 中高階：雙欄
+            optionsHtml += `<td style="width: 50%; vertical-align: top;">
+                              <p style="margin: 4px 0;">A. ${q.options[0] || ''}</p>
+                              <p style="margin: 4px 0;">C. ${q.options[2] || ''}</p>
+                           </td>`;
+            optionsHtml += `<td style="width: 50%; vertical-align: top;">
+                              <p style="margin: 4px 0;">B. ${q.options[1] || ''}</p>
+                              <p style="margin: 4px 0;">D. ${q.options[3] || ''}</p>
+                           </td>`;
+        }
+        optionsHtml += '</tr></table>';
+
+        qHtml += `
+            <div style="margin-bottom: 20px; page-break-inside: avoid;">
+                <p><strong>${idx + 1}. ${q.q}</strong> <span style="font-size: 10pt; color: #555555;">[${pirlsInfo.name}]</span></p>
+                <div style="margin-left: 15px;">${optionsHtml}</div>
+                <p style="text-align: right; margin-top: 5px;">(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</p>
+            </div>
+        `;
+    });
+
+    // 2. 組合整份文件的 HTML，大量使用 <table> 進行佈局
+    let contentHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                /* 🟢 這裡定義 Word 文件中的樣式，字體設定為標楷體 */
+                body { font-family: 'Biaukai', '標楷體', serif; font-size: 12pt; }
+                h1 { font-size: 20pt; margin:0; padding:0; }
+                h2 { font-size: 16pt; margin:0; padding:0; font-weight: normal; }
+                h3 { font-size: 14pt; }
+                p { line-height: 1.6; margin: 5px 0; }
+                table { width: 100%; border-collapse: collapse; }
+                td { vertical-align: top; }
+            </style>
+        </head>
+        <body>
+            <!-- 頁首：使用 table 模擬置中效果 -->
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+                <h1>閱讀理解訓練工作紙</h1>
+                <h2>《${art.title}》— ${diffName}挑戰</h2>
+            </div>
+
+            <!-- 學生資料欄：使用 table 模擬排版 -->
+            <table style="margin-bottom: 15px; font-size: 14pt;">
+                <tr>
+                    <td style="width: 35%;">班級：___________________</td>
+                    <td style="width: 25%;">座號：_____________</td>
+                    <td style="width: 40%;">姓名：____________________</td>
+                </tr>
+            </table>
+
+            <!-- 閱讀篇章區塊 -->
+            <div style="margin-bottom: 20px;">
+                <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-bottom: 10px;">閱讀篇章</h3>
+                <div style="border: 2px solid #000; border-radius: 8px; padding: 15px; text-align: justify; line-height: 1.8;">
+                    ${art.content[diff].replace(/\n/g, '<br>')}
+                </div>
+            </div>
+
+            <!-- 選擇題區塊 -->
+            <div>
+                <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-bottom: 15px;">選擇題</h3>
+                ${qHtml}
+            </div>
+            
+        </body>
+        </html>
+    `;
+
+    // 3. 執行匯出
+    try {
+        const converted = htmlDocx.asBlob(contentHtml, {
+            orientation: 'portrait', // 直向
+            margins: { top: 720, right: 720, bottom: 720, left: 720 } // 邊界單位為 twip (1cm = 567 twips)
+        });
+        
+        const url = URL.createObjectURL(converted);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${art.title}-${diffName}工作紙.docx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error("匯出 Word 失敗:", error);
+        alert("抱歉，匯出 Word 檔案時發生錯誤。");
+    }
+}
+
 
 
 </script>
