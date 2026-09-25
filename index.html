@@ -477,6 +477,120 @@
             font-size: 1em;
         }
 
+/* =========================================================
+   📚 學生閱讀區塊 5.0 (極緻清爽・半透明範疇標籤系統)
+========================================================= */
+
+/* --- 大區塊容器 (保持高質感底色與圓角) --- */
+.article-zone {
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 30px;
+    border: 1px solid;
+}
+/* 1. 班級優先推薦 (微風淺橘) */
+.zone-class { 
+    background-color: #fffbeb; 
+    border-color: #fde68a; 
+}
+.zone-class .zone-title { color: #b45309; }
+
+/* 2. 年級精選建議 (晨露淺粉) */
+.zone-grade { 
+    background-color: #fdf2f8; 
+    border-color: #fbcfe8; 
+}
+.zone-grade .zone-title { color: #be185d; }
+
+/* 3. 其他探索篇章 (晴空微藍) */
+.zone-other { 
+    background-color: #f0f9ff; 
+    border-color: #bae6fd; 
+}
+.zone-other .zone-title { color: #0369a1; }
+
+/* 區塊標題樣式 */
+.zone-title {
+    font-size: 1.35em;
+    font-weight: 800;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 2px dashed rgba(0,0,0,0.06);
+    padding-bottom: 15px;
+}
+
+/* 網格系統 (iPad 最佳化寬度) */
+.zone-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* --- 🌟 學生文章卡片：極緻純白浮凸設計 --- */
+.article-box {
+    background: #ffffff !important;
+    padding: 22px 20px 20px 20px !important; /* 調整內距，給上方小標籤呼吸空間 */
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 4px 12px -2px rgba(0,0,0,0.03), 0 2px 6px -2px rgba(0,0,0,0.02) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* 讓內容靠左對齊 */
+}
+
+/* 卡片觸控與懸停動畫 */
+.article-box:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 12px 20px -5px rgba(0,0,0,0.06), 0 6px 8px -6px rgba(0,0,0,0.03) !important;
+    transform: translateY(-4px);
+}
+
+/* --- 🌟 縮小、減淡的「精緻範疇小標籤」 --- */
+.article-box-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px !important; /* 大幅縮減內距，讓標籤變小巧 */
+    border-radius: 6px !important; /* 稍帶圓角，比大圓角更具書本精緻感 */
+    font-size: 0.78em !important;   /* 字體縮小 */
+    font-weight: 600 !important;     /* 字重微調，避免過粗 */
+    margin-bottom: 12px !important; /* 與文章標題拉開優雅的間距 */
+}
+
+/* --- 🎨 莫蘭迪半透明色彩系統 (低飽和、高質感) --- */
+
+/* 預設分類 (質感灰) */
+.cat-default { 
+    background-color: rgba(100, 116, 139, 0.12) !important;
+    color: #475569 !important;
+}
+
+/* 重新挑戰標籤 (維持溫暖淡紅) */
+.cat-retake {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: #dc2626 !important;
+}
+
+
+/* --- 文章主標題：優雅、清晰、易讀 --- */
+.article-box-title {
+    font-weight: 700 !important;
+    font-size: 1.12em !important; /* 略微修小標題，使整體比例更和諧 */
+    color: #1e293b !important;
+    margin: 0 !important;
+    line-height: 1.45 !important;
+    word-break: break-all;
+}
+
+
 
     </style>
 
@@ -2128,36 +2242,33 @@ function toggleBatchGradeGroup(mode) {
         }
     }
 
-// ▼▼▼【核心過濾修復】學生端篇章清單渲染與過濾邏輯 (支援無限次重新發佈) ▼▼▼
+// ▼▼▼ 這是最完整、保留分頁功能並採用全新卡片與範疇配色的版本 ▼▼▼
 function populateStudentArticleDropdown() {
     const container = document.getElementById('student-article-classification-container');
     const diffCard = document.getElementById('diff-card');
     const placeholder = document.getElementById('quiz-placeholder');
     const allCompletedBanner = document.getElementById('all-completed-banner');
     const articleSelectionCard = document.getElementById('article-selection-card');
-
     const studentGrade = getStudentGradeFromClass(currentStudentClass);
 
     // 1. 篩選出所有已發佈的文章
     const publishedArticles = Object.entries(articlesData).filter(([key, art]) => art.status === 'published');
-    
-    // 2. 嚴格過濾規則 (比對最後作答時間與重新發佈時間)：
+
+    // 2. 嚴格過濾規則 (比對最後作答時間與重新發佈時間)
     const availableArticles = publishedArticles.filter(([key, art]) => {
         const mySubs = quizSubmissionsData.filter(sub => 
             sub.username === currentStudentUsername && 
             sub.articleKey === key
         );
-
         if (mySubs.length === 0) return true; // 從未做過，開放挑戰
+        if (!art.allowRetake) return false; // 已做過且未設為允許重做，隱藏
 
-        if (!art.allowRetake) return false; // 已做過，且老師未設為「重新發佈」，隱藏
-
-        // 找出這名學生「最後一次」提交這篇文章的時間
+        // 找出這名學生最後一次提交時間
         mySubs.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
         const lastSubTime = mySubs[0].submittedAt;
         const articleModTime = art.lastModified || '2000-01-01 00:00';
 
-        // 只要老師「重新發佈」的時間，晚於學生「最後一次提交」的時間，學生就可以再做！
+        // 只要重新發佈時間晚於學生的最後提交時間，就可以再做
         return lastSubTime < articleModTime; 
     });
 
@@ -2171,7 +2282,7 @@ function populateStudentArticleDropdown() {
         allCompletedBanner.style.display = 'block';
         return;
     }
-    
+
     allCompletedBanner.style.display = 'none';
     articleSelectionCard.style.display = 'block';
     diffCard.style.display = 'none';
@@ -2180,11 +2291,9 @@ function populateStudentArticleDropdown() {
     const classRecommendList = [];
     const gradeSuggestList = [];
     const otherExploreList = [];
-
     availableArticles.forEach(([key, art]) => {
         const isTargetClass = (art.targetClasses || []).includes(currentStudentClass);
         const isGradeMatch = isArticleGradeMatch(art.recommendedGrades, studentGrade);
-
         if (isTargetClass) {
             classRecommendList.push([key, art]);
         } else if (isGradeMatch) {
@@ -2200,51 +2309,74 @@ function populateStudentArticleDropdown() {
     gradeSuggestList.sort(sortByDate);
     otherExploreList.sort(sortByDate);
 
-    // 5. 方格渲染
-    function generateBoxHtml(key, art, defaultBadgeText, badgeClass) {
-        const mySubs = quizSubmissionsData.filter(sub => sub.username === currentStudentUsername && sub.articleKey === key);
-        let isRetake = false;
+    // 🎨 【全新智慧動態配色系統】
+    // 預先準備好 8 組高質感、低飽和莫蘭迪色系的「文字顏色」與「背景色」
+    const MORANDI_PALETTES = [
+        { text: "#ea580c", bg: "rgba(249, 115, 22, 0.12)" },   // 輕柔粉橙
+        { text: "#92400e", bg: "rgba(120, 53, 15, 0.10)" },   // 典雅茶色
+        { text: "#059669", bg: "rgba(16, 185, 129, 0.12)" },   // 薄荷微綠
+        { text: "#1d4ed8", bg: "rgba(37, 99, 235, 0.10)" },   // 冰川淡藍
+        { text: "#6d28d9", bg: "rgba(124, 58, 237, 0.10)" },   // 丁香薰紫
+        { text: "#0f766e", bg: "rgba(13, 148, 136, 0.10)" },   // 晨曦湖綠
+        { text: "#dc2626", bg: "rgba(239, 68, 68, 0.11)" },   // 柔和淡紅
+        { text: "#be185d", bg: "rgba(251, 113, 133, 0.12)" }    // 浪漫粉紅
+    ];
 
+    // 利用簡單的字串雜湊（Hash）演算法，確保同一個範疇名稱永遠配到同一個顏色
+    function generateCategoryStyleAttr(category) {
+        if (!category) {
+            // 若無範疇，使用預設灰色
+            return `background-color: rgba(100, 116, 139, 0.12); color: #475569;`;
+        }
+        
+        let hash = 0;
+        for (let i = 0; i < category.length; i++) {
+            hash = category.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        // 取絕對值並對色庫長度取模（Modulo），挑選出一組專屬配色
+        const index = Math.abs(hash) % MORANDI_PALETTES.length;
+        const palette = MORANDI_PALETTES[index];
+        
+        return `background-color: ${palette.bg} !important; color: ${palette.text} !important;`;
+    }
+
+    // 5. 卡片渲染函數 (動態渲染樣式版)
+    function generateBoxHtml(key, art) {
+        const categoryName = art.category || "閱讀篇章";
+        // 動態計算此範疇的專屬 inline style
+        const dynamicStyle = generateCategoryStyleAttr(art.category);
+
+        let isRetake = false;
+        const mySubs = quizSubmissionsData.filter(sub => sub.username === currentStudentUsername && sub.articleKey === key);
         if (mySubs.length > 0 && art.allowRetake) {
             mySubs.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
-            const lastSubTime = mySubs[0].submittedAt;
-            const articleModTime = art.lastModified || '2000-01-01 00:00';
-            if (lastSubTime < articleModTime) {
+            if (mySubs[0].submittedAt < (art.lastModified || '')) {
                 isRetake = true;
             }
         }
-
-        let badgeText = defaultBadgeText;
-        let currentBadgeClass = badgeClass;
-        let doneSuffix = '';
-
-        // 這裡是「重新發佈」且學生曾經做過的情況
-        if (isRetake) {
-            badgeText = '🔄 篇章重新發佈';
-            currentBadgeClass = 'tag-cancelled';
-            doneSuffix = ' <span style="color: #ef4444; font-size: 0.85em; font-weight: bold; display: block; margin-top: 4px;">(可再次挑戰，新積分將取代舊紀錄⚠️)</span>';
-        }
         
-        const catInfo = art.category ? `🏷️ ${art.category}` : '<i class="fa-solid fa-book-open"></i>閱讀篇章';
-        const dateInfo = art.lastModified ? `🕒 ${art.lastModified.slice(5, 10)}` : '';
+        // 重新挑戰標籤
+        const retakeBadge = isRetake ? `<span class="article-box-badge cat-retake" style="margin-left: 8px;">🔄 可重挑戰</span>` : '';
 
         return `
             <button type="button" class="article-box" id="artbox-${key}" onclick="selectArticle('${key}', this)">
-                <span class="article-box-badge ${currentBadgeClass}">${badgeText}</span>
-                <div class="article-box-title">${art.title}${doneSuffix}</div>
-                <div class="article-box-meta">
-                    <span>${catInfo}</span>
-                    <span>${dateInfo}</span>
+                <div style="display: flex; align-items: center; width: 100%;">
+                    <!-- 💡 直接將動態生成的 style 注入 style 屬性中 -->
+                    <span class="article-box-badge" style="${dynamicStyle}">${categoryName}</span>
+                    ${retakeBadge}
                 </div>
+
+                <!-- 卡片主標題 -->
+                <div class="article-box-title">${art.title}</div>
             </button>
         `;
     }
 
-    // 6. 分頁控制器
+    // 🌟 6. 分頁控制器 (原封不動保留在原本的位置！)
     function generatePaginationHtml(sectionType, currentPage, totalItems) {
         const totalPages = Math.ceil(totalItems / ARTICLES_PER_PAGE);
         if (totalPages <= 1) return '';
-
         return `
             <div class="pagination-container">
                 <button type="button" class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="changeStudentPage('${sectionType}', ${currentPage - 1})">
@@ -2258,82 +2390,85 @@ function populateStudentArticleDropdown() {
         `;
     }
 
+    // 7. 組合三大區塊，並推入容器 (帶有專屬色的大容器與新圖示)
     let finalHtml = '';
 
+    // 班級優先推薦
     if (classRecommendList.length > 0) {
         const totalItems = classRecommendList.length;
         const maxPage = Math.ceil(totalItems / ARTICLES_PER_PAGE);
         if (studentPageClassRecommend > maxPage) studentPageClassRecommend = maxPage;
         const startIdx = (studentPageClassRecommend - 1) * ARTICLES_PER_PAGE;
         const pageItems = classRecommendList.slice(startIdx, startIdx + ARTICLES_PER_PAGE);
+        
         finalHtml += `
-                       <div class="student-article-section" style="border-top: 4px solid #f59e0b;">
-                <div class="student-section-title">⭐ 班級優先推薦</div>
-                <div class="article-grid-layout">
-                    <!-- 👉 修正為 'badge-class-priority' -->
-                    ${pageItems.map(([key, art]) => generateBoxHtml(key, art, '<i class="fa-solid fa-crown"></i> 本班專屬', 'badge-class-priority')).join('')}
+            <div class="article-zone zone-class">
+                <div class="zone-title"><i class="fa-solid fa-crown"></i> 班級優先推薦</div>
+                <div class="zone-grid">
+                    ${pageItems.map(([key, art]) => generateBoxHtml(key, art)).join('')}
                 </div>
                 ${generatePaginationHtml('classRecommend', studentPageClassRecommend, totalItems)}
             </div>
         `;
     }
 
+    // 年級精選建議
     if (gradeSuggestList.length > 0) {
         const totalItems = gradeSuggestList.length;
         const maxPage = Math.ceil(totalItems / ARTICLES_PER_PAGE);
         if (studentPageGradeSuggest > maxPage) studentPageGradeSuggest = maxPage;
         const startIdx = (studentPageGradeSuggest - 1) * ARTICLES_PER_PAGE;
         const pageItems = gradeSuggestList.slice(startIdx, startIdx + ARTICLES_PER_PAGE);
+        
         finalHtml += `
-            <div class="student-article-section" style="border-top: 4px solid #3b82f6;">
-                <div class="student-section-title">🎯 年級精選建議</div>
-                <div class="article-grid-layout">
-                    <!-- 👉 修正為 'badge-grade-recommend' -->
-                    ${pageItems.map(([key, art]) => generateBoxHtml(key, art, '<i class="fa-solid fa-star"></i> 年級精選', 'badge-grade-recommend')).join('')}
+            <div class="article-zone zone-grade">
+                <div class="zone-title"><i class="fa-solid fa-wand-magic-sparkles"></i> 年級精選建議</div>
+                <div class="zone-grid">
+                    ${pageItems.map(([key, art]) => generateBoxHtml(key, art)).join('')}
                 </div>
                 ${generatePaginationHtml('gradeSuggest', studentPageGradeSuggest, totalItems)}
             </div>
         `;
     }
 
+    // 其他探索篇章
     if (otherExploreList.length > 0) {
         const totalItems = otherExploreList.length;
         const maxPage = Math.ceil(totalItems / ARTICLES_PER_PAGE);
         if (studentPageOtherExplore > maxPage) studentPageOtherExplore = maxPage;
         const startIdx = (studentPageOtherExplore - 1) * ARTICLES_PER_PAGE;
         const pageItems = otherExploreList.slice(startIdx, startIdx + ARTICLES_PER_PAGE);
+        
         finalHtml += `
-            <div class="student-article-section" style="border-top: 4px solid #64748b;">
-                <div class="student-section-title"><i class="fa-solid fa-book-open"></i> 其他探索篇章</div>
-                <div class="article-grid-layout">
-                    <!-- 👉 修正為 'badge-explore' -->
-                    ${pageItems.map(([key, art]) => generateBoxHtml(key, art, '<i class="fa-solid fa-compass"></i> 延伸探索', 'badge-explore')).join('')}
+            <div class="article-zone zone-other">
+                <div class="zone-title"><i class="fa-solid fa-compass"></i> 其他探索篇章</div>
+                <div class="zone-grid">
+                    ${pageItems.map(([key, art]) => generateBoxHtml(key, art)).join('')}
                 </div>
                 ${generatePaginationHtml('otherExplore', studentPageOtherExplore, totalItems)}
             </div>
         `;
-}
+    }
 
     container.innerHTML = finalHtml;
 }
 
-    // ▼▼▼【新增】切換翻頁並重新渲染的控制函式 ▼▼▼
-    function changeStudentPage(sectionType, targetPage) {
-        if (sectionType === 'classRecommend') {
-            studentPageClassRecommend = targetPage;
-        } else if (sectionType === 'gradeSuggest') {
-            studentPageGradeSuggest = targetPage;
-        } else if (sectionType === 'otherExplore') {
-            studentPageOtherExplore = targetPage;
-        }
-        
-        // 重新渲染列表
-        populateStudentArticleDropdown();
-        
-        // 溫和地滾動回篇章選擇卡頂部，提升操作體驗
-        document.getElementById('article-selection-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+// ▼▼▼【核心翻頁控制函式】▼▼▼
+function changeStudentPage(sectionType, targetPage) {
+    if (sectionType === 'classRecommend') {
+        studentPageClassRecommend = targetPage;
+    } else if (sectionType === 'gradeSuggest') {
+        studentPageGradeSuggest = targetPage;
+    } else if (sectionType === 'otherExplore') {
+        studentPageOtherExplore = targetPage;
     }
-    // ▲▲▲【新增】切換翻頁並重新渲染的控制函式 ▲▲▲
+    
+    // 重新渲染列表
+    populateStudentArticleDropdown();
+    
+    // 溫和地滾動回篇章選擇卡頂部
+    document.getElementById('article-selection-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 // 選擇篇章：點擊卡片進入難度選擇
 function selectArticle(key, element) {
