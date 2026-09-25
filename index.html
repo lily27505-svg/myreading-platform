@@ -445,6 +445,20 @@
             }
         }
 
+        /* 🌟 升級挑戰橫幅與懸浮視窗專用動畫 */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pulseGlow {
+            0% { opacity: 0.3; transform: scale(0.98); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+            100% { opacity: 0.3; transform: scale(0.98); }
+        }
+        .banner-btn-hover:hover {
+            transform: scale(1.05) !important;
+        }
+
 
     </style>
 
@@ -516,13 +530,23 @@
 
             </div>
 
-            <!-- 連續滿分升級挑戰激勵提示橫幅 -->
-            <div id="streak-upgrade-banner" class="upgrade-alert-banner" style="display: none;">
-                <div>
-                    <h4 style="margin: 0 0 4px 0; color: #b45309;">🌟 實力超群！連續滿分達成！</h4>
-                    <span id="streak-upgrade-text" style="font-size: 0.95em;">您已連續 3 次在初階篇章獲得滿分！挑戰升級為「進階理解」即可解鎖 <strong>額外 +10 獎勵加分</strong>！</span>
+            <!-- 連續滿分升級挑戰激勵提示橫幅 (全新超醒目版) -->
+            <div id="streak-upgrade-banner" class="upgrade-alert-banner" style="display: none; background: linear-gradient(135deg, #fffbeb 0%, #fef08a 100%); border: 3px solid #f59e0b; border-radius: 16px; padding: 25px; margin-bottom: 25px; box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4); align-items: center; justify-content: space-between; position: relative; overflow: hidden;">
+                
+                <!-- 發光動畫背景層 -->
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, transparent 60%); opacity: 0.6; animation: pulseGlow 2.5s infinite;"></div>
+                
+                <div style="position: relative; z-index: 1; flex: 1;">
+                    <h3 style="margin: 0 0 8px 0; color: #b45309; font-size: 1.4em; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-crown" style="color: #eab308; font-size: 1.3em;"></i> 實力超群！連續滿分達成！
+                    </h3>
+                    <div id="streak-upgrade-text" style="font-size: 1.1em; color: #78350f; font-weight: 600; line-height: 1.5;">
+                        <!-- 文字會由 JS 動態填入 -->
+                    </div>
                 </div>
-                <button type="button" class="btn btn-warning" id="streak-upgrade-btn" onclick="acceptDifficultyUpgrade()">🔥 立即挑戰升級 (+10分)</button>
+                <button type="button" class="btn btn-warning banner-btn-hover" id="streak-upgrade-btn" onclick="acceptDifficultyUpgrade()" style="position: relative; z-index: 1; font-size: 1.25em; padding: 14px 28px; border-radius: 30px; background: linear-gradient(to right, #ea580c, #d97706); color: white; border: none; box-shadow: 0 6px 15px rgba(234, 88, 12, 0.4); white-space: nowrap; margin-left: 20px; cursor: pointer; transition: all 0.2s;">
+                    🔥 立即挑戰升級 (+10分)
+                </button>
             </div>
 
             <!-- 完成全篇章提示 -->
@@ -533,83 +557,79 @@
                 <button type="button" class="btn btn-secondary" style="margin-left:8px;" onclick="switchStudentTab('history')">📜 回顧我的作答診斷</button>
             </div>
 
+            <!-- 難度選擇卡片 -->
             <div class="card" id="diff-card" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h4 style="margin: 0;"><i class="fa-solid fa-bullseye" style="color: #ec4899; width: 20px;"></i> 選擇閱讀挑戰等級 (階梯式認知訓練)：</h4>
                     <span style="font-size: 0.85em; color: #64748b;">挑戰愈高，積點愈多！</span>
                     <button type="button" class="btn btn-secondary" onclick="goBackToArticleSelection()" style="padding: 6px 12px; font-size: 0.9em; display: inline-flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-chevron-left"></i 返回篇章選擇
+                        <i class="fa-solid fa-chevron-left"></i> 返回篇章選擇
                     </button>
                 </div>
-                               <div class="diff-selector">
+               <div class="diff-selector">
                     <div class="diff-btn selected" id="diff-low" onclick="selectDifficulty('low')">
                         <strong><i class="fa-solid fa-leaf" style="color:#10b981;"></i> 初階探索 (Low)</strong>
                         <small>最高 30 分<br>約150字 | 3 題 (提取與基礎)</small>
                     </div>
-                    
                     <div class="diff-btn" id="diff-medium" onclick="selectDifficulty('medium')">
                         <span id="badge-upgrade-medium" class="diff-upgrade-tag" style="display:none; background:#fef08a; color:#b45309; padding:2px 8px; border-radius:12px; font-size:0.75em; font-weight:bold; margin-bottom:5px;">獎勵 +10分</span>
                         <strong><i class="fa-solid fa-tree" style="color:#f59e0b;"></i> 進階理解 (Medium)</strong>
                         <small>最高 40 分<br>約350字 | 4 題 (推論與整合)</small>
                     </div>
-                    
                     <div class="diff-btn" id="diff-high" onclick="selectDifficulty('high')">
                         <span id="badge-upgrade-high" class="diff-upgrade-tag" style="display:none; background:#fef08a; color:#b45309; padding:2px 8px; border-radius:12px; font-size:0.75em; font-weight:bold; margin-bottom:5px;">獎勵 +10分</span>
                         <strong><i class="fa-solid fa-mountain" style="color:#ef4444;"></i> 高階思維 (High)</strong>
                         <small>最高 50 分<br>約600字 | 5 題 (評價與賞析)</small>
                     </div>
-                </div>
-
+                </div> <!-- 🟢 修正：diff-selector 在這裡正確關閉 -->
 
                 <div id="difficulty-preview-box" style="margin-top: 15px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: none;">
                     <h5 id="preview-title" style="margin: 0 0 8px 0; color: #1e40af;">預覽內容</h5>
                     <div id="preview-content" style="font-size: 0.9em; line-height: 1.6; max-height: 150px; overflow-y: auto; color: #475569; white-space: pre-wrap;"></div>
                 </div>
+                <button type="button" id="confirm-diff-btn" class="btn btn-warning" style="width: 100%; margin-top: 15px; font-weight: bold;"><i class="fa-solid fa-pen-to-square"></i> 確認選擇並開始閱讀</button>
+            </div> <!-- 🟢 修正：diff-card 在這裡正確關閉 -->
 
-<button type="button" id="confirm-diff-btn" class="btn btn-warning" style="width: 100%; margin-top: 15px; font-weight: bold;">✅ 確認選擇並開始閱讀</button>
-
-            </div>
-            <!-- ▼▼▼ 這裡就是剛才漏掉的「包裝容器開頭」 ▼▼▼ -->
+            <!-- 閱讀與作答並排區 -->
             <div class="reading-quiz-layout">
-
-            <div class="card" id="article-card" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: gap; gap: 8px;">
-                    <div>
-                        <h3 id="article-title" style="margin: 0; color: #0f172a; display: inline-block;">文章標題</h3>
-                        <span id="article-meta-badge" style="font-size: 0.8em; margin-left: 8px;"></span>
+                <div class="card" id="article-card" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: gap; gap: 8px;">
+                        <div>
+                            <h3 id="article-title" style="margin: 0; color: #0f172a; display: inline-block;">文章標題</h3>
+                            <span id="article-meta-badge" style="font-size: 0.8em; margin-left: 8px;"></span>
+                        </div>
+                        <span id="current-word-count" style="font-size: 0.85em; background: #e2e8f0; padding: 4px 8px; border-radius: 4px;">字數: 0 字</span>
                     </div>
-                    <span id="current-word-count" style="font-size: 0.85em; background: #e2e8f0; padding: 4px 8px; border-radius: 4px;">字數: 0 字</span>
-                </div>
-                <p id="article-body" style="line-height: 1.85; font-size: 1.05em; color: #334155; background: #fdfdfd; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; white-space: pre-wrap; margin-top: 12px;"></p>
-                <div class="reading-bar">
-                    <div class="timer-badge">
-                        ⏱️ 建議閱讀沉浸時間：<span id="timer-text">00:00</span>
+                    <p id="article-body" style="line-height: 1.85; font-size: 1.05em; color: #334155; background: #fdfdfd; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; white-space: pre-wrap; margin-top: 12px;"></p>
+                    <div class="reading-bar">
+                        <div class="timer-badge">
+                            ⏱️ 建議閱讀沉浸時間：<span id="timer-text">00:00</span>
+                        </div>
+                        <div>
+                            <span id="pace-hint" style="font-size: 0.85em; color: #64748b; margin-right: 10px;">💡 請細心品味內文細節</span>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="skipTimer()" style="display: none;">⚡ [測試專用] 跳過倒數</button>
+                        </div>
                     </div>
-                    <div>
-                        <span id="pace-hint" style="font-size: 0.85em; color: #64748b; margin-right: 10px;">💡 請細心品味內文細節</span>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="skipTimer()" style="display: none;">⚡ [測試專用] 跳過倒數</button>
+                </div>
+                <div class="card" id="quiz-card" style="display: none;">
+                    <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px;">
+                        <h4 id="quiz-title" style="margin: 0; color: #0f172a;">閱讀理解能力評測</h4>
+                        <small style="color: #64748b;">本評測涵蓋 PIRLS 四大思維階梯：首次答對獲 10 分；答錯將提供「思考線索」，補答成功仍可獲 5 分！</small>
                     </div>
+                    <form id="quiz-form" onsubmit="event.preventDefault()">
+                        <div id="questions-container"></div>
+                        <button type="button" id="quiz-submit-btn" class="btn btn-success" style="width: 100%; font-size: 1.05em; padding: 12px;" onclick="submitQuiz()" disabled>⏳ 請先細閱文章完成沉浸時間</button>
+                        <div id="quiz-result" style="display: none; margin-top: 15px; padding: 14px; border-radius: 8px; line-height: 1.6;"></div>
+                    </form>
                 </div>
-            </div>
+            </div> <!-- 🟢 修正：reading-quiz-layout 在這裡正確關閉 -->
 
-            <div class="card" id="quiz-card" style="display: none;">
-                <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px;">
-                    <h4 id="quiz-title" style="margin: 0; color: #0f172a;">閱讀理解能力評測</h4>
-                    <small style="color: #64748b;">本評測涵蓋 PIRLS 四大思維階梯：首次答對獲 10 分；答錯將提供「思考線索」，補答成功仍可獲 5 分！</small>
-                </div>
-                <form id="quiz-form" onsubmit="event.preventDefault()">
-                    <div id="questions-container"></div>
-                    <button type="button" id="quiz-submit-btn" class="btn btn-success" style="width: 100%; font-size: 1.05em; padding: 12px;" onclick="submitQuiz()" disabled>⏳ 請先細閱文章完成沉浸時間</button>
-                    <div id="quiz-result" style="display: none; margin-top: 15px; padding: 14px; border-radius: 8px; line-height: 1.6;"></div>
-                </form>
-            </div>
-            <!-- ▼▼▼ 這裡就是剛才漏掉的「包裝容器結尾」 ▼▼▼ -->
-            </div>
-
+            <!-- 初始提示文字 -->
             <div id="quiz-placeholder" style="background: #f8fafc; border: 2px dashed #cbd5e1; padding: 25px; text-align: center; color: #64748b; border-radius: 8px;">
                 👆 請先於上方選取文章與挑戰等級，點擊「解鎖文章」開始閱讀！
             </div>
-        </div>
+        </div> <!-- 🟢 修正：tab-reading 在這裡正確關閉 -->
+
 
         <!-- 學生分頁 2: 榮譽勳章館 -->
         <div id="tab-badges" style="display: none;">
@@ -1441,7 +1461,7 @@ let quizSession = {
                 rewardAdminData: JSON.stringify(rewardAdminData),
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log("✅ 資料已成功同步至雲端！");
+		console.log('<i class="fa-solid fa-circle-check"></i> 資料已成功同步至雲端！');
         } catch (error) {
             console.error("雲端寫入失敗:", error);
             alert("⚠️ 資料上傳雲端失敗，請檢查網路權限！");
@@ -1491,7 +1511,7 @@ let quizSession = {
                     return;
                 }
 
-                // ✅ 登入成功，寫入 localStorage 讓下次重新整理能記住
+                // <i class="fa-solid fa-circle-check"></i> 登入成功，寫入 localStorage 讓下次重新整理能記住
                 localStorage.setItem('savedUsername', found.username);
                 localStorage.setItem('savedPassword', found.password);
                 localStorage.setItem('savedIsTeacher', isTeacher);
@@ -1528,6 +1548,12 @@ let quizSession = {
                     safeRun(populateTeacherArticlePickers, 'populateTeacherArticlePickers');
                     safeRun(renderMultiClassAnalytics, 'renderMultiClassAnalytics');
                     
+                    // ▼▼▼ 自動恢復教師上次停留的分頁 ▼▼▼
+                    setTimeout(() => {
+                        const savedTeacherTab = localStorage.getItem('savedTeacherTab') || 'analytics';
+                        switchTeacherTab(savedTeacherTab);
+                    }, 50);
+
                 } else {
                     document.getElementById('main-student-system').style.display = 'block';
                     document.getElementById('student-info-text').innerText = `登入身份：${found.username} ${found.name} (${found.class}班 ${found.seat}號) | 年級：${getStudentGradeFromClass(found.class)}`;
@@ -1554,6 +1580,12 @@ let quizSession = {
                     safeRun(renderStudentHistoryTable, 'renderStudentHistoryTable');
                     safeRun(renderStudentStore, 'renderStudentStore');
                     safeRun(renderStudentRedemptionHistory, 'renderStudentRedemptionHistory');
+
+                    // ▼▼▼ 自動恢復學生上次停留的分頁 ▼▼▼
+                    setTimeout(() => {
+                        const savedStudentTab = localStorage.getItem('savedStudentTab') || 'reading';
+                        switchStudentTab(savedStudentTab);
+                    }, 50);
                 }
             } else {
                 if(!autoUser) alert('帳號或密碼錯誤');
@@ -1972,6 +2004,8 @@ function toggleBatchGradeGroup(mode) {
         localStorage.removeItem('savedUsername');
         localStorage.removeItem('savedPassword');
         localStorage.removeItem('savedIsTeacher');
+        localStorage.removeItem('savedStudentTab'); // ▼ 新增這行：清除學生分頁記憶
+        localStorage.removeItem('savedTeacherTab'); // ▼ 新增這行：清除老師分頁記憶
         document.getElementById('main-student-system').style.display = 'none';
         document.getElementById('main-teacher-system').style.display = 'none';
         document.getElementById('login-card').style.display = 'block';
@@ -1991,12 +2025,19 @@ function toggleBatchGradeGroup(mode) {
        4. 學生端核心流程 (階梯閱讀、連續滿分升級判定)
     ======================================================== */
     function switchStudentTab(tab, element) {
+        localStorage.setItem('savedStudentTab', tab);
         document.querySelectorAll('#main-student-system .tab-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById('tab-reading').style.display = tab === 'reading' ? 'block' : 'none';
         document.getElementById('tab-badges').style.display = tab === 'badges' ? 'block' : 'none';
         document.getElementById('tab-history').style.display = tab === 'history' ? 'block' : 'none';
         document.getElementById('tab-store').style.display = tab === 'store' ? 'block' : 'none';
+        
+        // ▼ 避開引號衝突的極度安全寫法
+        if (!element) {
+            element = document.querySelector("#main-student-system .tab-btn[onclick*='" + tab + "']");
+        }
         if (element) element.classList.add('active');
+        
         if (tab === 'reading') checkStudentDifficultyStreak();
         if (tab === 'badges') renderStudentBadges();
         if (tab === 'history') renderStudentHistoryTable();
@@ -2348,7 +2389,8 @@ function resetQuizSession() {
     const confirmBtn = document.getElementById('confirm-diff-btn');
     if (confirmBtn) {
         confirmBtn.disabled = false;
-        confirmBtn.innerText = '✅ 確認選擇並開始閱讀';
+// 請將 innerText 改為 innerHTML
+confirmBtn.innerHTML = '<i class="fa-solid fa-pen-to-square"> 確認選擇並開始閱讀';
         confirmBtn.className = 'btn btn-warning';
     }
 
@@ -2430,7 +2472,7 @@ function selectDifficulty(diff) {
     const confirmBtn = document.getElementById('confirm-diff-btn');
 
     if (confirmBtn) {
-        confirmBtn.innerText = quizSession.isRetake ? '🔄 確認重做難度並開始閱讀' : '✅ 確認選擇並開始閱讀';
+        confirmBtn.innerHTML = quizSession.isRetake ? '🔄 確認重做難度並開始閱讀' : '<i class="fa-solid fa-pen-to-square"></i> 確認選擇並開始閱讀';
         confirmBtn.className = 'btn btn-warning';
         confirmBtn.onclick = confirmDifficulty;
     }
@@ -2826,6 +2868,36 @@ function finishArticleQuiz(earned, isPerfect, pickedArr, upgradeBonus = 0) {
         renderStudentBadges();
         checkStudentDifficultyStreak();
 
+        // ▼▼▼ 新增：檢查是否「剛剛好」達成 3 次滿分，隱藏普通提示並彈出懸浮視窗 ▼▼▼
+        const mySubs = quizSubmissionsData.filter(s => s.username === currentStudentUsername && s.isActive && s.diff !== 'manual_bonus');
+        if (mySubs.length >= 3) {
+            const recent3 = mySubs.slice(0, 3);
+            const firstDiff = recent3[0].diff;
+            const allSameDiff = recent3.every(s => s.diff === firstDiff);
+            const allPerfect = recent3.every(s => s.isPerfect === true);
+            
+            let justAchieved = false;
+            if (allSameDiff && allPerfect) {
+                if (mySubs.length === 3) {
+                    justAchieved = true;
+                } else {
+                    const prev3 = mySubs.slice(1, 4);
+                    const prevSameDiff = prev3.every(s => s.diff === firstDiff);
+                    const prevPerfect = prev3.every(s => s.isPerfect === true);
+                    if (!(prevSameDiff && prevPerfect)) {
+                        justAchieved = true;
+                    }
+                }
+            }
+
+            if (justAchieved && (firstDiff === 'low' || firstDiff === 'medium')) {
+                if (resultBox) resultBox.style.display = 'none'; // 隱藏原本的結算框
+                showStreakModal(firstDiff, art); // 顯示全新 Modal
+            }
+        }
+        // ▲▲▲ 新增結束 ▲▲▲
+
+
     } catch (error) {
         console.error("結算測驗時發生錯誤：", error);
     }
@@ -2903,7 +2975,7 @@ function handleNextArticleAfterCompletion() {
             const art = articlesData[s.articleKey];
             const title = art ? art.title : s.articleKey;
             const category = art ? art.category || '通識' : '教師激勵';
-            const diffMap = { low: '🟢 初階探索', medium: '🟡 進階理解', high: '🔴 高階思維', manual_bonus: '🎁 教師獎勵' };
+            const diffMap = { low: '🟢 初階探索', medium: '🟡 進階理解', high: '🔴 高階思維', manual_bonus: '<i class="fa-solid fa-hand-holding-heart"></i> 教師獎勵' };
 
             let actionHtml = '';
             if (s.diff === 'manual_bonus') {
@@ -3287,6 +3359,66 @@ function handleNextArticleAfterCompletion() {
                 });
             });
 
+            // ▼▼▼ 依難度分組匯出學生個別作答明細，並動態顯示真實題目與維度 ▼▼▼
+            csv += `\n【學生個別作答明細與 PIRLS 維度表現】\n`;
+
+            // 取得已過濾時段、並過濾該篇文章與指定班級的紀錄
+            let allSubsForArt = getFilteredSubmissions().filter(s => s.articleKey === key);
+            if (classFilter !== 'ALL') allSubsForArt = allSubsForArt.filter(s => s.class === classFilter);
+
+            // 定義要輸出的難度順序 (高 -> 中 -> 低)
+            const diffOrder = ['high', 'medium', 'low'];
+            const diffNames = { 'high': '高階', 'medium': '進階', 'low': '初階' };
+
+            diffOrder.forEach(diff => {
+                const diffSubs = allSubsForArt.filter(s => s.diff === diff);
+                if (diffSubs.length === 0) return; // 若該難度無人作答則跳過
+
+                // 每個難度建立獨立的小標題與表頭
+                csv += `\n--- ${diffNames[diff]}挑戰 學生作答明細 ---\n`;
+                
+                let headerCols = `班級,座號,姓名,帳號,獲得積分,完成日期,[整體]提取訊息,[整體]直接推論,[整體]統整解釋,[整體]評價反思`;
+                
+                const qList = art.quizzes[diff] || [];
+                // 動態將該難度的實際題目加入表頭
+                qList.forEach(q => {
+                    const pirlsName = PIRLS_LABELS[q.level] ? PIRLS_LABELS[q.level].name : q.level;
+                    // 將雙引號替換為兩個雙引號，避免破壞 CSV 格式
+                    const safeQText = q.q.replace(/"/g, '""');
+                    headerCols += `,"[${pirlsName}] ${safeQText}"`;
+                });
+                csv += headerCols + `\n`;
+
+                // 排序學生 (依班級、座號)
+                diffSubs.sort((a, b) => String(a.class||'').localeCompare(String(b.class||'')) || String(a.seat||'').localeCompare(String(b.seat||'')));
+
+                diffSubs.forEach(s => {
+                    const st = rosterData.find(r => r.username === s.username) || {};
+                    const stats = calculateStudentPirlsStats(s.username); // 取得該學生的 4 維度表現
+                    const rRate = stats.retrieval.total > 0 ? `${Math.round((stats.retrieval.correct/stats.retrieval.total)*100)}%` : 'N/A';
+                    const iRate = stats.inference.total > 0 ? `${Math.round((stats.inference.correct/stats.inference.total)*100)}%` : 'N/A';
+                    const pRate = stats.interpretation.total > 0 ? `${Math.round((stats.interpretation.correct/stats.interpretation.total)*100)}%` : 'N/A';
+                    const eRate = stats.evaluation.total > 0 ? `${Math.round((stats.evaluation.correct/stats.evaluation.total)*100)}%` : 'N/A';
+
+                    let qAnsStr = [];
+                    // 依據動態題目數量，逐一比對學生答案
+                    qList.forEach((q, idx) => {
+                        const pickedIdx = s.optionsPicked ? s.optionsPicked[idx] : null;
+                        if (pickedIdx !== null && pickedIdx !== undefined) {
+                            const pickedLetter = ['A','B','C','D'][pickedIdx];
+                            const correctLetter = ['A','B','C','D'][q.correct];
+                            const isCorrect = pickedIdx === q.correct ? '⭕' : '❌';
+                            qAnsStr.push(`"${pickedLetter} (${isCorrect} 正解:${correctLetter})"`);
+                        } else {
+                            qAnsStr.push(`"未作答"`);
+                        }
+                    });
+
+                    // 輸出該學生的資料列
+                    csv += `"${st.class || s.class}","${st.seat || s.seat}","${st.name || s.name}","${s.username}","${s.score}","${s.submittedAt}","${rRate}","${iRate}","${pRate}","${eRate}",${qAnsStr.join(',')}\n`;
+                });
+            });
+
         // 2. 個別學生認知雷達 (匯出該學生每一題的詳細對錯)
         } else if (currentAnalyticsSubView === 'by-student') {
             const uname = document.getElementById('teacher-student-picker').value;
@@ -3492,7 +3624,7 @@ function applyBatchArticleSettings() {
     populateTeacherArticlePickers();
     populateStudentArticleDropdown();
     toggleBatchEditArticlePanel();
-    alert(`✅ 成功批量更新 ${selected.length} 篇篇章設定！`);
+    alert(`<i class="fa-solid fa-circle-check"></i> 成功批量更新 ${selected.length} 篇篇章設定！`);
 }
 
 function renderArticleManagementList() {
@@ -3673,7 +3805,7 @@ function changeTeacherArticlePage(targetPage) {
         renderArticleManagementList();
         populateTeacherArticlePickers();
         populateStudentArticleDropdown();
-        alert(`✅ 已成功刪除篇章【${art.title}】！`);
+        alert(`<i class="fa-solid fa-circle-check"></i> 已成功刪除篇章【${art.title}】！`);
     }
 
 // 3. 建立新文章
@@ -4057,6 +4189,7 @@ function toggleArticleDateSort() {
     }
 
     function switchTeacherTab(tab, element) {
+        localStorage.setItem('savedTeacherTab', tab);
         document.querySelectorAll('#main-teacher-system .tab-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById('teacher-analytics').style.display = tab === 'analytics' ? 'block' : 'none';
         document.getElementById('teacher-create-article').style.display = tab === 'create-article' ? 'block' : 'none';
@@ -4064,6 +4197,11 @@ function toggleArticleDateSort() {
         document.getElementById('teacher-bonus-points').style.display = tab === 'bonus-points' ? 'block' : 'none';
         document.getElementById('teacher-manage-students').style.display = tab === 'manage-students' ? 'block' : 'none';
         document.getElementById('teacher-rewards-admin').style.display = tab === 'rewards-admin' ? 'block' : 'none';
+        
+        // ▼ 避開引號衝突的極度安全寫法
+        if (!element) {
+            element = document.querySelector("#main-teacher-system .tab-btn[onclick*='" + tab + "']");
+        }
         if (element) element.classList.add('active');
 
         if (tab === 'analytics') {
@@ -4073,7 +4211,7 @@ function toggleArticleDateSort() {
         }
         if (tab === 'create-article') {
             renderTargetClassCheckboxes();
-	    renderBatchTargetClassCheckboxes();
+            renderBatchTargetClassCheckboxes();
             refreshCategoryUIElements();
             renderArticleManagementList();
         }
@@ -4082,6 +4220,7 @@ function toggleArticleDateSort() {
         if (tab === 'manage-students') renderRosterPreview();
         if (tab === 'bonus-points') renderStudentCheckboxList();
     }
+
 
     function populateTeacherArticlePickers() {
         const picker = document.getElementById('teacher-article-picker');
@@ -4150,7 +4289,7 @@ function toggleArticleDateSort() {
                 item.cost = cost;
                 item.initialStock = stock;
                 item.status = status;
-                alert(`✅ 獎品【${name}】已成功更新！`);
+                alert(`<i class="fa-solid fa-circle-check"></i> 獎品【${name}】已成功更新！`);
             }
         } else {
             const newId = `r_${Date.now()}`;
@@ -4308,7 +4447,7 @@ function toggleArticleDateSort() {
         renderMultiClassAnalytics();
         updateRosterClassFilters();
         saveAllDataToLocalStorage();
-        alert(`✅ 學生 [${st.name} (${username})] 已成功自名冊中刪除！`);
+        alert(`<i class="fa-solid fa-circle-check"></i> 學生 [${st.name} (${username})] 已成功自名冊中刪除！`);
     }
 
     function batchDeleteStudents() {
@@ -4333,7 +4472,7 @@ function toggleArticleDateSort() {
         renderMultiClassAnalytics();
         updateRosterClassFilters();
         saveAllDataToLocalStorage();
-        alert(`✅ 批量處理完成！已成功刪除 ${count} 位學生。`);
+        alert(`<i class="fa-solid fa-circle-check"></i> 批量處理完成！已成功刪除 ${count} 位學生。`);
     }
 
     function toggleSingleStudentLock(username, lockState) {
@@ -4427,7 +4566,7 @@ function toggleArticleDateSort() {
                 if (password !== '********' && password !== '') {
                     st.password = password;
                 }
-                alert(`✅ 成功修訂學生 [${username}] 的資料！`);
+                alert(`<i class="fa-solid fa-circle-check"></i> 成功修訂學生 [${username}] 的資料！`);
             }
         } else { 
             const exist = rosterData.find(r => r.username === username);
@@ -4577,7 +4716,7 @@ function toggleArticleDateSort() {
                 });
 
                 // 📝 新增：組合最終的報告訊息
-                let finalMessage = `📊 Excel 匯入完成！\n\n✅ 成功匯入/更新：${successCount} 位學生。`;
+                let finalMessage = `📊 Excel 匯入完成！\n\n<i class="fa-solid fa-circle-check"></i> 成功匯入/更新：${successCount} 位學生。`;
                 
                 if (errorLog.length > 0) {
                     finalMessage += `\n\n❌ 發現 ${errorLog.length} 筆異常資料未匯入：\n`;
@@ -4666,7 +4805,7 @@ function toggleArticleDateSort() {
                     class: st.class,
                     seat: st.seat,
                     academicYear: getCurrentAcademicYear(),
-                    articleKey: `🎁 [教師激勵] ${reason}`,
+                    articleKey: `<i class="fa-solid fa-hand-holding-heart"></i> [教師激勵] ${reason}`,
                     diff: 'manual_bonus',
                     timeSec: 0,
                     score: pts,
@@ -4849,7 +4988,7 @@ function toggleArticleDateSort() {
                 // 寫入 LocalStorage 持久化
                 saveAllDataToLocalStorage();
 
-                alert("✅ 系統資料庫已成功還原！請重新登入。");
+                alert('<i class="fa-solid fa-circle-check"></i> 系統資料庫已成功還原！請重新登入。');
                 window.location.reload(); // 重新整理以套用新資料
 
             } catch (err) {
@@ -4870,7 +5009,7 @@ function copyPrompt() {
         return; 
     }
     navigator.clipboard.writeText(promptArea.value.trim()).then(() => {
-        alert('✅ Prompt 已成功複製！');
+        alert('<i class="fa-solid fa-circle-check"></i> Prompt 已成功複製！');
     }).catch(err => {
         alert('複製失敗，請手動複製。');
     });
@@ -5041,7 +5180,7 @@ function parseAndFillAI() {
         }, 300); // 延遲 0.3 秒執行，確保內容都填完了才按
 
         // 確保這裡只有一個 alert
-        alert(`✅ 魔法發生了！\n\n系統已成功解析並自動為你填妥：\n- 三級文章內容\n- 共計 12 條測驗題目、選項與 PIRLS 標籤！\n\n請老師快速檢查後即可按下儲存發佈！`);
+        alert(`<i class="fa-solid fa-circle-check"></i> 魔法發生了！\n\n系統已成功解析並自動為你填妥：\n- 三級文章內容\n- 共計 12 條測驗題目、選項與 PIRLS 標籤！\n\n請老師快速檢查後即可按下儲存發佈！`);
 
     } catch (e) {
         console.error("解析失敗:", e);
@@ -5366,7 +5505,7 @@ ${targetData.content.replace(/\\n/g, '\n')}
 
                 <!-- 選擇題區塊 -->
                 <div>
-                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 15px; font-size: ${config.titleFont};"><i class="fa-solid fa-pen-to-square"></i>  選擇題</h3>
+                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 15px; font-size: ${config.titleFont};"> <i class="fa-solid fa-pen-to-square"></i>  選擇題</h3>
                     ${qHtml}
                 </div>
                 
@@ -5385,6 +5524,49 @@ ${targetData.content.replace(/\\n/g, '\n')}
 </script>
 <!-- ▼▼▼【新增】列印專用隱藏容器 ▼▼▼ -->
 <div id="print-area"></div>
+<!-- ▼▼▼ 升級挑戰懸浮視窗 (Modal) ▼▼▼ -->
+<div id="streak-success-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.65); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+    <div class="card" style="background: white; border: 4px solid #f59e0b; width: 90%; max-width: 520px; text-align: center; padding: 40px 30px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+        <div style="font-size: 4.5em; margin-bottom: 15px; animation: pulseGlow 2s infinite;">🏆</div>
+        <h2 style="color: #b45309; margin-top: 0; font-size: 2em;">太神了！連續三次滿分！</h2>
+        <p id="streak-modal-text" style="font-size: 1.15em; color: #475569; line-height: 1.7; margin-bottom: 25px;">
+            <!-- 內容由 JS 動態填入 -->
+        </p>
+        <div id="streak-modal-link" style="margin-bottom: 25px;"></div>
+        <button class="btn btn-warning banner-btn-hover" style="font-size: 1.25em; padding: 14px 35px; border-radius: 30px; box-shadow: 0 8px 15px rgba(245, 158, 11, 0.4); background: linear-gradient(to right, #ea580c, #d97706); color: white; border: none; cursor: pointer; transition: all 0.2s;" onclick="closeStreakModalAndReturn()">
+            🚀 立即前往挑選新文章
+        </button>
+    </div>
+</div>
+
+<script>
+function showStreakModal(diff, art) {
+    const modal = document.getElementById('streak-success-modal');
+    const nextDiff = diff === 'low' ? '🟡 進階理解' : '🔴 高階思維';
+    
+    document.getElementById('streak-modal-text').innerHTML = `
+        您的閱讀實力已超越當前層級！<br>
+        系統為您解鎖了 <strong>升級挑戰任務</strong>。<br>
+        下一篇若挑戰【${nextDiff}】，將可獲得 <strong style="color: #dc2626; font-size: 1.2em; background: #fee2e2; padding: 2px 8px; border-radius: 6px;">+10 分</strong> 的額外獎勵！<br>
+        準備好接受挑戰了嗎？
+    `;
+    
+    let linkHtml = '';
+    if (art && art.fullArticleLink) {
+        linkHtml = `<a href="${art.fullArticleLink}" target="_blank" style="color: #3b82f6; text-decoration: underline; font-size: 1.05em; font-weight: bold;">🔗 (延伸閱讀) 回顧剛完成的原文</a>`;
+    }
+    document.getElementById('streak-modal-link').innerHTML = linkHtml;
+    
+    modal.style.display = 'flex';
+}
+
+function closeStreakModalAndReturn() {
+    document.getElementById('streak-success-modal').style.display = 'none';
+    handleNextArticleAfterCompletion();
+}
+</script>
+<!-- ▲▲▲ 升級挑戰懸浮視窗 (Modal) ▲▲▲ -->
+
 <!-- ▼▼▼ 隱藏的 Prompt 存放區，絕對避免 JS 引號衝突報錯 ▼▼▼ -->
 <textarea id="hidden-ai-prompt" style="display: none;">
 # 角色設定
