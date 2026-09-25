@@ -2831,7 +2831,7 @@ function skipTimer() {
         container.innerHTML = tempHtml;
     }
 
-// 提交測驗與補答處理 (強化防呆版 + 鎖定答對題)
+// 提交測驗與補答處理 (已加入自動捲動至首個錯誤題目的功能)
 function submitQuiz() {
     if (quizSession.attempts >= 2) return; // 已經完成補答
 
@@ -2862,6 +2862,7 @@ function submitQuiz() {
         if (quizSession.attempts === 0) {
             quizSession.firstAttemptStatus = [];
             let allCorrect = true;
+            let firstIncorrectIndex = -1; // ▼▼▼【新增】用於記錄第一題答錯的索引 ▼▼▼
 
             questions.forEach((item, i) => {
                 const isCorrect = (pickedArr[i] === item.correct);
@@ -2882,6 +2883,11 @@ function submitQuiz() {
                     if (label) label.classList.add('incorrect');
                     if (hintDiv) hintDiv.style.display = 'block';
                     allCorrect = false;
+                    
+                    // ▼▼▼【新增】如果這是第一個找到的錯誤，就記下它的索引 ▼▼▼
+                    if (firstIncorrectIndex === -1) {
+                        firstIncorrectIndex = i;
+                    }
                 }
             });
 
@@ -2902,6 +2908,15 @@ function submitQuiz() {
                 }
                 const submitBtn = document.getElementById('quiz-submit-btn');
                 if (submitBtn) submitBtn.innerText = '🔄 重新提交補答答案';
+
+                // ▼▼▼【新增】滑動到第一題答錯的位置 ▼▼▼
+                if (firstIncorrectIndex !== -1) {
+                    const firstIncorrectElement = document.getElementById(`q-card-${firstIncorrectIndex}`);
+                    if (firstIncorrectElement) {
+                        // 使用 behavior: 'smooth' 產生平滑捲動效果，block: 'center' 讓目標置中
+                        firstIncorrectElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
             }
         } 
         // 第二次提交（補答）
