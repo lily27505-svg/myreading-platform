@@ -1726,7 +1726,7 @@ function handleFatalError(message, errorOrBtn, maybeBtn) {
     }
 
     console.error("【系統嚴重錯誤】:", message, error);
-    alert(`系統發生錯誤：${message}\n\n詳細：${error ? (error.message || error) : ''}`);
+    alert(`${message}\n\n${error ? (error.message || error) : ''}`);
 
     if (loginBtn) {
         loginBtn.disabled = false;
@@ -4576,14 +4576,20 @@ async function fulfillReward(id) {
         document.querySelectorAll('.roster-select-chk').forEach(c => c.checked = checked);
     }
 
-    function deleteStudent(username) {
-        const st = allUsersCache.find(r => r.username === username);
-        if (!st) return;
+// 1. 單個刪除學生 (以 username 作為 Firebase Document ID)
+async function deleteStudent(username) {
+    const st = allUsersCache.find(r => r.username === username);
+    if (!st) return;
 
-        if (!confirm(`⚠️【刪除學生確認】\n\n您確定要永久刪除學生 [${st.name} (${st.username})] 嗎？\n此操作無法撤回！`)) {
-            return;
-        }
+    if (!confirm(`⚠️【刪除學生確認】\n\n您確定要永久刪除學生 [${st.name} (${st.username})] 嗎？\n此操作無法撤回，且會從雲端資料庫中永久刪除！`)) {
+        return;
+    }
 
+    try {
+        // ⭐ 核心修正：從 Firebase 資料庫中刪除對應的 username 文件
+        await db.collection("users").doc(username).delete();
+
+        // 成功後更新本地快取
         allUsersCache = allUsersCache.filter(r => r.username !== username);
 
         if (editingUsername === username) {
@@ -4595,23 +4601,39 @@ async function fulfillReward(id) {
         renderStudentCheckboxList();
         renderMultiClassAnalytics();
         updateRosterClassFilters();
-        saveAllDataToLocalStorage();
-        alert(`<i class="fa-solid fa-circle-check"></i> 學生 [${st.name} (${username})] 已成功自名冊中刪除！`);
+
+        alert(`✅ 學生 [${st.name} (${username})] 已成功從雲端及名冊中永久刪除！`);
+    } catch (error) {
+        console.error("刪除學生時發生錯誤:", error);
+        alert(`❌ 刪除失敗，請檢查網路連線：${error.message}`);
+    }
+}
+
+// 2. 批量刪除學生 (以 username 作為 Firebase Document ID)
+async function batchDeleteStudents() {
+    const checks = document.querySelectorAll('.roster-select-chk:checked');
+    if (checks.length === 0) {
+        alert('請至少勾選一位欲刪除的學生！');
+        return;
     }
 
-    function batchDeleteStudents() {
-        const checks = document.querySelectorAll('.roster-select-chk:checked');
-        if (checks.length === 0) {
-            alert('請至少勾選一位欲刪除的學生！');
-            return;
-        }
+    const count = checks.length;
+    if (!confirm(`⚠️【批量刪除確認】\n\n確定要永久刪除所選的 ${count} 位學生嗎？\n此動作將一併從雲端資料庫中移除，無法恢復！`)) {
+        return;
+    }
 
-        const count = checks.length;
-        if (!confirm(`⚠️【批量刪除確認】\n\n確定要永久刪除所選的 ${count} 位學生嗎？\n此動作將一併從名冊中移除！`)) {
-            return;
-        }
-
+    try {
         const usernamesToDelete = Array.from(checks).map(c => c.value);
+        const batch = db.batch(); // ⭐ 準備批量寫入
+
+        usernamesToDelete.forEach(username => {
+            const userRef = db.collection("users").doc(username);
+            batch.delete(userRef); // 加入批次刪除
+        });
+
+        await batch.commit(); // 一次性提交到 Firebase
+
+        // 雲端刪除成功後，更新本地快取
         allUsersCache = allUsersCache.filter(st => !usernamesToDelete.includes(st.username));
 
         document.getElementById('roster-chk-all').checked = false;
@@ -4620,33 +4642,63 @@ async function fulfillReward(id) {
         renderStudentCheckboxList();
         renderMultiClassAnalytics();
         updateRosterClassFilters();
-        saveAllDataToLocalStorage();
-        alert(`<i class="fa-solid fa-circle-check"></i> 批量處理完成！已成功刪除 ${count} 位學生。`);
+
+        alert(`✅ 批量處理完成！已成功從雲端刪除 ${count} 位學生。`);
+    } catch (error) {
+        console.error("批量刪除學生時發生錯誤:", error);
+        alert(`❌ 批量刪除失敗：${error.message}`);
+    }
+}
+
+// 3. 單個鎖定/解鎖學生
+async function toggleSingleStudentLock(username, lockState) {
+    const st = allUsersCache.find(r => r.username === username);
+    if (!st) return;
+
+    try {
+        // ⭐ 核心修正：更新 Firebase 中該學生的 isLocked 狀態
+        await db.collection("users").doc(username).update({ isLocked: lockState });
+
+        // 本地快取同步
+        st.isLocked = lockState;
+
+        renderRosterPreview();
+        renderMultiClassAnalytics();
+
+        alert(`已成功將學生 [${st.name} (${st.username})] 設為：${lockState ? '🔒 鎖定 (禁止登入使用平台)' : '🔓 解鎖 (恢復正常使用)'}`);
+    } catch (error) {
+        console.error("更新鎖定狀態時發生錯誤:", error);
+        alert(`❌ 設定失敗：${error.message}`);
+    }
+}
+
+// 4. 批量鎖定/解鎖學生
+async function batchSetStudentLock(lockState) {
+    const checks = document.querySelectorAll('.roster-select-chk:checked');
+    if (checks.length === 0) {
+        alert('請至少勾選一位學生進行操作！');
+        return;
     }
 
-    function toggleSingleStudentLock(username, lockState) {
-        const st = allUsersCache.find(r => r.username === username);
-        if (st) {
-            st.isLocked = lockState;
-            renderRosterPreview();
-            renderMultiClassAnalytics(); 
-            saveAllDataToLocalStorage();
-            alert(`已成功將學生 [${st.name} (${st.username})] 設為：${lockState ? '🔒 鎖定 (禁止登入使用平台)' : '🔓 解鎖 (恢復正常使用)'}`);
-        }
-    }
+    const count = checks.length;
+    const confirmMsg = lockState ? 
+        `確定要將所選的 ${count} 位學生帳號進行【🔒 鎖定】嗎？鎖定後他們將無法登入平台。` :
+        `確定要將所選的 ${count} 位學生帳號進行【🔓 解鎖】恢復正常使用嗎？`;
 
-    function batchSetStudentLock(lockState) {
-        const checks = document.querySelectorAll('.roster-select-chk:checked');
-        if (checks.length === 0) {
-            alert('請至少勾選一位學生進行操作！');
-            return;
-        }
-        const count = checks.length;
-        const confirmMsg = lockState ? 
-            `確定要將所選的 ${count} 位學生帳號進行【🔒 鎖定】嗎？鎖定後他們將無法登入平台。` :
-            `確定要將所選的 ${count} 位學生帳號進行【🔓 解鎖】恢復正常使用嗎？`;
-        if (!confirm(confirmMsg)) return;
+    if (!confirm(confirmMsg)) return;
 
+    try {
+        const batch = db.batch(); // ⭐ 準備批量更新
+
+        checks.forEach(chk => {
+            const username = chk.value;
+            const userRef = db.collection("users").doc(username);
+            batch.update(userRef, { isLocked: lockState });
+        });
+
+        await batch.commit(); // 提交到 Firebase
+
+        // 成功後更新本地快取
         checks.forEach(chk => {
             const st = allUsersCache.find(r => r.username === chk.value);
             if (st) st.isLocked = lockState;
@@ -4654,38 +4706,56 @@ async function fulfillReward(id) {
 
         renderRosterPreview();
         renderMultiClassAnalytics();
-        saveAllDataToLocalStorage();
-        alert(`✅ 批量處理完成！已將 ${count} 位學生狀態更新為：${lockState ? '🔒 鎖定' : '🔓 解鎖'}`);
+
+        alert(`✅ 批量處理完成！已將 ${count} 位學生狀態同步更新為：${lockState ? '🔒 鎖定' : '🔓 解鎖'}`);
         document.getElementById('roster-chk-all').checked = false;
         toggleAllRosterCheckboxes(false);
+    } catch (error) {
+        console.error("批量更新鎖定狀態時發生錯誤:", error);
+        alert(`❌ 批量設定失敗：${error.message}`);
     }
+}
 
-    function editStudent(username) {
-        const st = allUsersCache.find(r => r.username === username);
-        if (!st) return;
-        editingUsername = username;
-        document.getElementById('student-form-title').innerText = `✏️ 編輯：${st.name}`;
-        document.getElementById('add-username').value = st.username;
-        document.getElementById('add-fullname').value = st.name;
-        document.getElementById('add-class').value = st.class;
-        document.getElementById('add-seat').value = st.seat;
-        // 🛡️ 密碼盲寫機制：永遠顯示星號，防止偷看
-        document.getElementById('add-password').value = '********'; 
-        document.getElementById('save-student-btn').innerText = '儲存修訂';
-        document.getElementById('cancel-edit-btn').style.display = 'block';
-    }
+// 5. 編輯學生按鈕點擊 (載入資料至表單，並將帳號輸入框改為 ReadOnly 以免手誤修改到 Document ID)
+function editStudent(username) {
+    const st = allUsersCache.find(r => r.username === username);
+    if (!st) return;
 
-    function resetStudentForm() {
-        editingUsername = null;
-        document.getElementById('student-form-title').innerText = '➕ 新增 / 編輯學生';
-        document.getElementById('add-username').readOnly = false;
-        document.getElementById('cancel-edit-btn').style.display = 'none';
-        document.getElementById('save-student-btn').innerText = '儲存學生資料';
-        document.querySelector('#teacher-manage-students form').reset();
-        document.getElementById('add-password').value = '123456';
-    }
+    editingUsername = username;
+    document.getElementById('student-form-title').innerText = `✏️ 編輯：${st.name}`;
+    
+    // ⭐ 安全機制：編輯狀態下將帳號設為 ReadOnly，防止修改使用者名稱（Document ID）導致新建帳號的問題
+    const usernameInput = document.getElementById('add-username');
+    usernameInput.value = st.username;
+    usernameInput.readOnly = true; 
 
-// 新增/編輯單個學生 (【V18.0 - 為您度身訂造的 Firebase 版】)
+    document.getElementById('add-fullname').value = st.name;
+    document.getElementById('add-class').value = st.class;
+    document.getElementById('add-seat').value = st.seat;
+
+    // 🛡️ 密碼盲寫機制：永遠顯示星號，防止偷看
+    document.getElementById('add-password').value = '********'; 
+    document.getElementById('save-student-btn').innerText = '儲存修訂';
+    document.getElementById('cancel-edit-btn').style.display = 'block';
+}
+
+// 6. 重置學生表單 (恢復帳號輸入框可編輯狀態)
+function resetStudentForm() {
+    editingUsername = null;
+    document.getElementById('student-form-title').innerText = '➕ 新增 / 編輯學生';
+    
+    // ⭐ 安全機制：重置時恢復帳號輸入框可輸入狀態
+    const usernameInput = document.getElementById('add-username');
+    usernameInput.readOnly = false;
+
+    document.getElementById('cancel-edit-btn').style.display = 'none';
+    document.getElementById('save-student-btn').innerText = '儲存學生資料';
+    document.querySelector('#teacher-manage-students form').reset();
+    document.getElementById('add-password').value = '123456';
+}
+
+
+// 新增/編輯單個學生 (以 username 作為 Firebase Document ID)
 async function handleSaveStudent(e) {
     e.preventDefault();
     const button = e.target.querySelector('button[type="submit"]') || e.target;
@@ -4702,64 +4772,93 @@ async function handleSaveStudent(e) {
         if (!username || !name || !className || !seat || !password) {
             throw new Error("請填寫所有學生資料欄位！");
         }
-        if (currentUser.class !== 'ADMIN' && (className === 'TEACHER' || className === 'ADMIN')) {
+        if (currentUser.role !== 'admin' && (className.toUpperCase() === 'TEACHER' || className.toUpperCase() === 'ADMIN')) {
             throw new Error('權限不足：只有超級管理員可以新增或修改教師帳號！');
         }
 
         const studentData = { username, name, class: className, seat };
-        // 密碼盲寫機制：只有當輸入新密碼時，才加入到待寫入的資料中
+        // 密碼盲寫機制：只有當輸入新密碼時，才寫入密碼
         if (password !== '********' && password !== '') {
             studentData.password = password;
         }
-        
-        // 透過 editingUsername 全域變數判斷是編輯還是新增
+
+        const userRef = db.collection("users").doc(username);
+
         if (editingUsername) {
-            const st = allUsersCache.find(r => r.username === editingUsername);
-            if (!st || !st.id) throw new Error(`在快取中找不到對應 ID 的學生 ${editingUsername}，無法更新。`);
-
             // 【編輯模式】
-            const userRef = db.collection("users").doc(st.id);
-            await userRef.update(studentData);
-            
-            // 更新本地快取
-            Object.assign(st, studentData); // 用新資料更新快取中的物件
-            alert(`✅ 成功修訂學生 [${username}] 的資料並寫入資料庫！`);
+            // 如果修改了使用者名稱 (username 變了)，需要刪除舊文件並建立新文件
+            if (editingUsername !== username) {
+                const oldUserRef = db.collection("users").doc(editingUsername);
+                
+                // 獲取舊資料以保留積分等數據
+                const oldDoc = await oldUserRef.get();
+                const oldData = oldDoc.exists ? oldDoc.data() : {};
+                
+                const mergedData = {
+                    totalPoints: 0,
+                    currentPoints: 0,
+                    isLocked: false,
+                    ...oldData,
+                    ...studentData
+                };
 
-        } else {
-            const exist = allUsersCache.find(r => r.username === username);
-            if (exist && exist.id) {
-                // 【更新現有學生模式】
-                const userRef = db.collection("users").doc(exist.id);
+                // 在新路徑寫入並刪除舊路徑
+                await userRef.set(mergedData);
+                await oldUserRef.delete();
+
+                // 更新本地快取
+                allUsersCache = allUsersCache.filter(r => r.username !== editingUsername);
+                allUsersCache.push({ id: username, ...mergedData });
+            } else {
+                // username 沒有變，直接更新
                 await userRef.update(studentData);
-                Object.assign(exist, studentData);
+                const st = allUsersCache.find(r => r.username === username);
+                if (st) Object.assign(st, studentData);
+            }
+            alert(`✅ 成功修訂學生 [${username}] 的資料！`);
+        } else {
+            // 【新增模式】
+            // 檢查是否已存在
+            const docSnap = await userRef.get();
+            if (docSnap.exists) {
+                // 已存在則進行更新
+                await userRef.update(studentData);
+                const exist = allUsersCache.find(r => r.username === username);
+                if (exist) Object.assign(exist, studentData);
                 alert(`✅ 已更新現有學生 [${username}] 的資料，歷史積分完整保留！`);
             } else {
-                // 【新增模式】
-                const fullNewStudent = { ...studentData, totalPoints: 0, currentPoints: 0, isLocked: false };
-                const newDocRef = await db.collection("users").add(fullNewStudent);
-                allUsersCache.push({ id: newDocRef.id, ...fullNewStudent });
-                alert(`🎉 成功新增學生 [${username}] 並寫入資料庫！`);
+                // 全新建立
+                const fullNewStudent = { 
+                    ...studentData, 
+                    totalPoints: 0, 
+                    currentPoints: 0, 
+                    isLocked: false 
+                };
+                await userRef.set(fullNewStudent);
+                // 這裡的 id 設為 username
+                allUsersCache.push({ id: username, ...fullNewStudent });
+                alert(`🎉 成功新增學生 [${username}] 並已同步到雲端！`);
             }
         }
 
         resetStudentForm();
-        if (typeof updateRosterClassFilters === 'function') updateRosterClassFilters();
+        updateRosterClassFilters();
         renderRosterPreview();
-        if (typeof populateTeacherStudentPickers === 'function') populateTeacherStudentPickers();
-        if (typeof renderStudentCheckboxList === 'function') renderStudentCheckboxList();
-        // renderMultiClassAnalytics(); // 可視需求啟用
+        populateTeacherStudentPickers();
+        renderStudentCheckboxList();
 
     } catch (error) {
         console.error("儲存學生時 Firebase 發生錯誤:", error);
         alert(`❌ 操作失敗：${error.message}`);
     } finally {
         button.disabled = false;
-        button.innerHTML = '✔️ 儲存'; // 根據您的UI調整
+        button.innerText = '儲存學生資料';
     }
 }
 
 
-// 批量導入學生名冊 (【V18.0 - 為您度身訂造的 Firebase 版】)
+
+// 批量導入學生名冊 (以 username 作為 Firebase Document ID)
 async function handleBatchImportStudents() {
     const button = event.target;
     button.disabled = true;
@@ -4776,42 +4875,51 @@ async function handleBatchImportStudents() {
         const batch = db.batch();
         const studentsToUpdateInCache = [];
 
-        lines.forEach((line, index) => {
-            if (!line.trim()) return;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (!line.trim()) continue;
+            
             const parts = line.split(',');
-            if (parts.length !== 5) {
-                errorLines.push(index + 1);
-                return;
+            if (parts.length < 5) {
+                errorLines.push(i + 1);
+                continue;
             }
+            
             const [username, name, className, seat, password] = parts.map(p => p.trim());
             if (!username || !name || !className || !seat || !password) {
-                 errorLines.push(index + 1);
-                 return;
+                errorLines.push(i + 1);
+                continue;
             }
 
-            const studentData = { username: username.toLowerCase(), name, class: className, seat, password };
-            const existingStudent = allUsersCache.find(r => r.username === studentData.username);
+            const lowerUsername = username.toLowerCase();
+            const studentData = { username: lowerUsername, name, class: className, seat, password };
+            const userRef = db.collection("users").doc(lowerUsername);
 
-            if (existingStudent && existingStudent.id) {
-                // 【更新模式】
-                const userRef = db.collection("users").doc(existingStudent.id);
+            const existingStudent = allUsersCache.find(r => r.username === lowerUsername);
+
+            if (existingStudent) {
+                // 已存在學生：更新資料
                 batch.update(userRef, studentData);
                 studentsToUpdateInCache.push({ ...existingStudent, ...studentData });
             } else {
-                // 【新增模式】
-                const userRef = db.collection("users").doc();
-                const fullNewStudent = { ...studentData, totalPoints: 0, currentPoints: 0, isLocked: false };
+                // 全新學生：使用 set 建立新文件，並設定預設值
+                const fullNewStudent = { 
+                    ...studentData, 
+                    totalPoints: 0, 
+                    currentPoints: 0, 
+                    isLocked: false 
+                };
                 batch.set(userRef, fullNewStudent);
-                studentsToUpdateInCache.push({ id: userRef.id, ...fullNewStudent });
+                studentsToUpdateInCache.push({ id: lowerUsername, ...fullNewStudent });
             }
             successCount++;
-        });
+        }
         
         if (successCount > 0) {
-            await batch.commit(); // 一次性提交所有更改
+            await batch.commit();
         }
 
-        // 批次寫入成功後，才更新本地快取
+        // 批次寫入成功後，更新本地快取
         studentsToUpdateInCache.forEach(updatedSt => {
             const index = allUsersCache.findIndex(u => u.username === updatedSt.username);
             if (index !== -1) {
@@ -4822,15 +4930,15 @@ async function handleBatchImportStudents() {
         });
 
         if (errorLines.length > 0) {
-            alert(`處理完成！成功向資料庫導入/更新 ${successCount} 位學生。略過錯誤行數：${errorLines.join(', ')}`);
+            alert(`處理完成！成功向資料庫導入/更新 ${successCount} 位學生。略過格式錯誤的行數：${errorLines.join(', ')}`);
         } else {
             alert(`🎉 處理完成！成功向資料庫導入/更新 ${successCount} 位學生。`);
         }
 
-        if (typeof updateRosterClassFilters === 'function') updateRosterClassFilters();
+        updateRosterClassFilters();
         renderRosterPreview();
-        if (typeof populateTeacherStudentPickers === 'function') populateTeacherStudentPickers();
-        if (typeof renderStudentCheckboxList === 'function') renderStudentCheckboxList();
+        populateTeacherStudentPickers();
+        renderStudentCheckboxList();
         document.getElementById('batch-student-input').value = '';
 
     } catch (error) {
@@ -4838,12 +4946,13 @@ async function handleBatchImportStudents() {
         alert(`❌ 操作失敗：${error.message}`);
     } finally {
         button.disabled = false;
-        button.innerHTML = '✔️ 確認導入'; // 根據您的UI調整
+        button.innerText = '🚀 文字批量導入';
     }
 }
 
 
-// 從 Excel 批量導入學生 (【V19.0 - 為您度身訂造的 Firebase 終極版】)
+
+// 從 Excel 批量導入學生 (【V20.0 - 完美整合 username 作為 Firebase ID 終極版】)
 function handleExcelImport(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -4885,35 +4994,41 @@ function handleExcelImport(event) {
                 if (!className) missingFields.push('班別');
                 if (!seat) missingFields.push('座號');
                 if (!password) missingFields.push('密碼');
-                if (missingFields.length === 5) return;
+
+                if (missingFields.length === 5) return; // 空行則略過
                 if (missingFields.length > 0) {
                     const displayName = name || username || '未知名稱';
                     errorLog.push(`第 ${rowNum} 列 [${displayName}] 缺少：${missingFields.join(', ')}`);
                     return;
                 }
 
-                // --- 【核心升級】準備寫入資料庫 ---
+                // --- 【核心升級】統一格式，並使用 username 作為唯一 ID ---
+                const lowerUsername = String(username).trim().toLowerCase();
                 const studentData = {
-                    username: String(username).trim().toLowerCase(),
+                    username: lowerUsername,
                     name: String(name).trim(),
                     class: String(className).trim(),
                     seat: String(seat).trim(),
                     password: String(password).trim()
                 };
 
-                const existingStudent = allUsersCache.find(r => r.username === studentData.username);
+                const userRef = db.collection("users").doc(lowerUsername); // ⭐ 核心：直接用 username 定位 Doc
+                const existingStudent = allUsersCache.find(r => r.username === lowerUsername);
 
-                if (existingStudent && existingStudent.id) {
-                    // 【更新模式】
-                    const userRef = db.collection("users").doc(existingStudent.id);
+                if (existingStudent) {
+                    // 【更新模式】直接更新該 user 的文件
                     batch.update(userRef, studentData);
                     studentsToUpdateInCache.push({ ...existingStudent, ...studentData });
                 } else {
-                    // 【新增模式】
-                    const userRef = db.collection("users").doc();
-                    const fullNewStudent = { ...studentData, totalPoints: 0, currentPoints: 0, isLocked: false };
+                    // 【新增模式】用 set 建立新文件（ID 即為 username）
+                    const fullNewStudent = { 
+                        ...studentData, 
+                        totalPoints: 0, 
+                        currentPoints: 0, 
+                        isLocked: false 
+                    };
                     batch.set(userRef, fullNewStudent);
-                    studentsToUpdateInCache.push({ id: userRef.id, ...fullNewStudent });
+                    studentsToUpdateInCache.push({ id: lowerUsername, ...fullNewStudent }); // 快取中的 ID 也是 username
                 }
                 successCount++;
             });
@@ -4933,7 +5048,7 @@ function handleExcelImport(event) {
             });
 
             // --- 完美保留您原有的最終報告訊息邏輯 ---
-            let finalMessage = `📊 Excel 匯入成功！\n\n<i class="fa-solid fa-circle-check"></i> 已向資料庫寫入/更新：${successCount} 位學生。`;
+            let finalMessage = `📊 Excel 匯入成功！\n\n✅ 已向資料庫寫入/更新：${successCount} 位學生。`;
             if (errorLog.length > 0) {
                 finalMessage += `\n\n❌ 發現 ${errorLog.length} 筆異常資料未匯入：\n`;
                 finalMessage += (errorLog.length > 10 ? errorLog.slice(0, 10).join('\n') + `\n... (及其他 ${errorLog.length - 10} 筆錯誤)` : errorLog.join('\n'));
@@ -4941,7 +5056,7 @@ function handleExcelImport(event) {
             }
             alert(finalMessage);
             
-            // --- 更新UI ---
+            // --- 更新 UI ---
             if (typeof updateRosterClassFilters === 'function') updateRosterClassFilters();
             renderRosterPreview();
             if (typeof populateTeacherStudentPickers === 'function') populateTeacherStudentPickers();
@@ -4957,6 +5072,7 @@ function handleExcelImport(event) {
     };
     reader.readAsArrayBuffer(file);
 }
+
 
 
     function downloadImportTemplate() {
@@ -5418,9 +5534,12 @@ function parseAndFillAI() {
                             }
                         }
                         levels[idx].value = pLevel;
-                        hints[idx].value = `💡 思考線索：請回到文本中尋找關於「${q.question.substring(0,10)}...」的細節。`;
-                    }
-                });
+                        // ⭐ 核心修正：優先使用 AI 生成的 scaffolding_hint。如果沒有，才使用罐頭提示作為 Back局 備份。
+        if (hints[idx]) {
+            hints[idx].value = q.scaffolding_hint || `💡 思考線索：請回到文本中尋找關於「${q.question.substring(0,10)}...」的細節。`;
+        }
+    }
+});
 
                 if (typeof renderProofreadPreview === 'function') {
                     renderProofreadPreview(targetData, levelName, finalTitle);
