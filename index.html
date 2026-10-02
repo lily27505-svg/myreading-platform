@@ -205,17 +205,77 @@
 
         /* 🖨️ 列印樣式 */
         @media print {
-            body { background: white; margin: 0; padding: 0; color: #000; }
+            /* 1. 鎖定 A4 紙張與標準邊距（上下左右保留 1.5 cm 的黃金安全距離） */
+            @page { 
+                size: A4 portrait; 
+                margin: 15mm 15mm 15mm 15mm; 
+            }
+
+            body { 
+                background: white; 
+                margin: 0; 
+                padding: 0; 
+                color: #000; 
+                /* 2. 強制鎖定字體與行高，防止因電腦預設字型不同而撐開版面 */
+                font-family: "Microsoft JhengHei", "Heiti TC", "Segoe UI", sans-serif !important;
+                line-height: 1.5 !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+
             .container, header, .tab-buttons, #login-card { display: none !important; }
-            #print-area { display: block !important; }
-            @page { margin: 0; }
-            .page-break { page-break-after: always; }
-            .print-card { border: 2px solid #000; padding: 30px; margin-bottom: 20px; border-radius: 8px; }
-            .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
-            .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 14pt;}
-            .print-table th { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+            #print-area { display: block !important; width: 100% !important; }
+
+            /* 3. 強制手動分頁：當您在 HTML 中加入 <div class="page-break"></div> 時一定會乾淨換頁 */
+            .page-break { 
+                page-break-after: always; 
+                break-after: page;
+            }
+
+            .print-card { 
+                border: 2px solid #000; 
+                padding: 30px; 
+                margin-bottom: 20px; 
+                border-radius: 8px; 
+                /* 4. 關鍵：防止單個工作紙卡片被分頁「腰斬」切斷 */
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .print-header { 
+                text-align: center; 
+                border-bottom: 2px solid #000; 
+                padding-bottom: 15px; 
+                margin-bottom: 20px; 
+                /* 防止標頭與後續內容脫節 */
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+
+            .print-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 15px; 
+                /* 防止表格在頁面邊緣被切開 */
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .print-table th, .print-table td { 
+                border: 1px solid #000; 
+                padding: 10px; 
+                text-align: left; 
+                font-size: 12pt; /* 微調字體至 12pt 更符合 A4 閱讀比例 */
+            }
+
+            .print-table th { 
+                background-color: #f0f0f0 !important; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
         }
+
         @media screen { #print-area { display: none; } }
 
         /* =========================================================
@@ -5805,7 +5865,7 @@ ${targetData.content.replace(/\\n/g, '\n')}
 
         if (diff === 'low') {
             config.baseFont = '15pt';
-            config.lineHeight = '2';
+            config.lineHeight = '1.8';
             config.optCols = '100%'; 
         } else if (diff === 'medium') {
             config.baseFont = '13.5pt';
