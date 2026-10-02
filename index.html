@@ -203,69 +203,80 @@
             #article-body { padding: 16px; font-size: 1rem; max-width: 100%; }
         }
 
-/* 🖨️ 列印樣式 (【精準放行防走位版】) */
-@media print {
-    /* 1. 鎖定 A4 紙張與標準邊距（上下左右保留 1.5 cm 的黃金安全距離） */
-    @page {
-        size: A4 portrait;
-        margin: 1.5cm;
-    }
+        /* 🖨️ 列印樣式 */
+        @media print {
+            /* 1. 鎖定 A4 紙張與標準邊距（上下左右保留 1.5 cm 的黃金安全距離） */
+            @page { 
+                size: A4 portrait; 
+                margin: 15mm 15mm 15mm 15mm; 
+            }
 
-    body {
-        background: white !important;
-        margin: 0;
-        padding: 0;
-        color: #000;
-        font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
+            body { 
+                background: white; 
+                margin: 0; 
+                padding: 0; 
+                color: #000; 
+                /* 2. 強制鎖定字體與行高，防止因電腦預設字型不同而撐開版面 */
+                font-family: "Microsoft JhengHei", "Heiti TC", "Segoe UI", sans-serif !important;
+                line-height: 1.5 !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
 
-    /* 隱藏所有與列印無關的網頁元素 */
-    .container, header, .tab-buttons, #login-card, #main-teacher-system > header, .tab-buttons, .action-btn-group, .print-control-group select {
-        display: none !important;
-    }
+            .container, header, .tab-buttons, #login-card { display: none !important; }
 
-    #print-area {
-        display: block !important;
-        width: 100%;
-        height: auto;
-    }
+            #print-area { display: block !important; width: 100% !important; }
 
-    .print-card {
-        border: none !important;  
-        padding: 0 !important;     
-        margin: 0 !important;
-        box-shadow: none !important;
-        width: 100% !important;
-        /* 💡 移除大容器的 break-inside: avoid，允許大容器自然換頁 */
-    }
+            /* 3. 強制手動分頁：當您在 HTML 中加入 <div class="page-break"></div> 時一定會乾淨換頁 */
+            .page-break { 
+                page-break-after: always; 
+                break-after: page;
+            }
 
-    /* 2. 💡 精準控制防斷裂：只防止「單個題目」或「單個表格」被切斷，而不是所有的 div */
-    .print-table, 
-    #print-area > div > div[style*="break-inside"] {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }
+            .print-card { 
+                border: 2px solid #000; 
+                padding: 30px; 
+                margin-bottom: 20px; 
+                border-radius: 8px; 
+                /* 4. 關鍵：防止單個工作紙卡片被分頁「腰斬」切斷 */
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
 
-    /* 確保表格標頭在換頁時能重複出現 */
-    thead {
-        display: table-header-group;
-    }
+            .print-header { 
+                text-align: center; 
+                border-bottom: 2px solid #000; 
+                padding-bottom: 15px; 
+                margin-bottom: 20px; 
+                /* 防止標頭與後續內容脫節 */
+                page-break-after: avoid;
+                break-after: avoid;
+            }
 
-    .print-table th {
-        background-color: #f0f0f0 !important;
-    }
-}
+            .print-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 15px; 
+                /* 防止表格在頁面邊緣被切開 */
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
 
-/* 確保螢幕上 #print-area 保持隱藏 */
-@media screen {
-    #print-area {
-        display: none;
-    }
-}
+            .print-table th, .print-table td { 
+                border: 1px solid #000; 
+                padding: 10px; 
+                text-align: left; 
+                font-size: 12pt; /* 微調字體至 12pt 更符合 A4 閱讀比例 */
+            }
 
+            .print-table th { 
+                background-color: #f0f0f0 !important; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
+        }
 
+        @media screen { #print-area { display: none; } }
 
         /* =========================================================
            🛠️ 教師端：管理表格排版修正 (1600px 最佳化)
@@ -5855,7 +5866,7 @@ ${targetData.content.replace(/\\n/g, '\n')}
         if (diff === 'low') {
             config.baseFont = '15pt';
             config.lineHeight = '1.8';
-            config.optCols = '50%'; 
+            config.optCols = '100%'; 
         } else if (diff === 'medium') {
             config.baseFont = '13.5pt';
             config.lineHeight = '1.7';
@@ -5928,8 +5939,8 @@ ${targetData.content.replace(/\\n/g, '\n')}
                 <div style="margin-bottom: 25px;">
                     <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 10px; font-size: ${config.titleFont};"><i class="fa-solid fa-book-open"></i>閱讀篇章</h3>
                     
-                    <!-- 修改亮點 2: 為文本加上實體框線 (border: 1.5px solid #000) 並增加 padding -->
-                    <div style="border: 1.5px solid #000; border-radius: 8px; padding: 8px 12px; line-height: ${config.lineHeight}; font-size: ${config.baseFont}; white-space: pre-wrap; text-align: justify; box-sizing: border-box;">${art.content[diff]}</div>
+                    <!-- 修改亮點 2: 為文本加上實體框線 (border: 2px solid #000) 並增加 padding -->
+                    <div style="border: 2px solid #000; border-radius: 8px; padding: 15px 20px; line-height: ${config.lineHeight}; font-size: ${config.baseFont}; white-space: pre-wrap; text-align: justify; box-sizing: border-box;">${art.content[diff]}</div>
                 </div>
 
                 <!-- 選擇題區塊 -->
@@ -5948,8 +5959,6 @@ ${targetData.content.replace(/\\n/g, '\n')}
         document.getElementById('print-area').innerHTML = html;
         window.print();
     }
-
-
 
 /* ========================================================
    🅰️ 字體縮放核心功能
