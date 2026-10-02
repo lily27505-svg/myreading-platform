@@ -2198,19 +2198,19 @@ function populateStudentArticleDropdown() {
 
 // ▼▼▼【核心翻頁控制函式】▼▼▼
 function changeStudentPage(sectionType, targetPage) {
-    if (sectionType === 'classRecommend') {
-        studentPageClassRecommend = targetPage;
-    } else if (sectionType === 'gradeSuggest') {
-        studentPageGradeSuggest = targetPage;
-    } else if (sectionType === 'otherExplore') {
-        studentPageOtherExplore = targetPage;
+    // 核心修正：直接更新 studentPageInfo 物件中對應的屬性
+    if (studentPageInfo[sectionType] !== undefined) {
+        studentPageInfo[sectionType] = targetPage;
     }
     
-    // 重新渲染列表
+    // 重新渲染整個文章列表
     populateStudentArticleDropdown();
     
-    // 溫和地滾動回篇章選擇卡頂部
-    document.getElementById('article-selection-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // 溫和地滾動回篇章選擇卡頂部，提升使用者體驗
+    const articleCard = document.getElementById('article-selection-card');
+    if (articleCard) {
+        articleCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // 選擇篇章：點擊卡片進入難度選擇 (已修復 allUsersCache 在學生端為 null 的問題)
@@ -3678,7 +3678,8 @@ function renderArticleManagementList() {
                         <button class="btn btn-warning btn-sm" onclick="editArticle('${key}')">
                             <i class="fa-solid fa-pen"></i> 編輯
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="togglePublish('${key}')">
+                        <button class="btn btn-danger btn-sm" onclick="toggleArticleStatus('${key}')">
+
                             <i class="fa-solid fa-lock"></i> ${isPub ? '下架' : '上架'}
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="deleteArticle('${key}')">
@@ -3747,25 +3748,39 @@ function changeTeacherArticlePage(targetPage) {
 
 
 
-    function deleteArticle(key) {
-        const art = articlesCache[key];
-        if (!art) return;
-        if (!confirm(`⚠️【刪除篇章確認】\n\n您確定要永久刪除篇章【${art.title}】嗎？\n此操作無法復原，並將同步自學生閱讀選單中移除！`)) {
-            return;
-        }
+// 【V13.0 修正版 - 真正從雲端刪除文章】
+async function deleteArticle(key) {
+    const art = articlesCache[key];
+    if (!art) return;
+    if (!confirm(`⚠️【永久刪除確認】\n\n您確定要從雲端資料庫永久刪除篇章【${art.title}】嗎？\n此操作無法復原！`)) {
+        return;
+    }
 
+    try {
+        // 1. 核心：向 Firebase 發送刪除指令
+        await db.collection("articles").doc(key).delete();
+
+        // 2. 雲端刪除成功後，才更新本地快取
         delete articlesCache[key];
         if (editingArticleKey === key) {
-            startNewArticleCreation();
+            cancelArticleEdit(); 
         }
 
-        saveAllDataToLocalStorage();
+        // 3. 重新渲染所有受影響的 UI
         refreshCategoryUIElements();
         renderArticleManagementList();
         populateTeacherArticlePickers();
-        populateStudentArticleDropdown();
-        alert(`<i class="fa-solid fa-circle-check"></i> 已成功刪除篇章【${art.title}】！`);
+        if (typeof populateStudentArticleDropdown === 'function') {
+            populateStudentArticleDropdown();
+        }
+
+        alert(`✅ 已成功從雲端資料庫刪除篇章【${art.title}】！`);
+
+    } catch (error) {
+        console.error("刪除文章時發生 Firebase 錯誤：", error);
+        alert(`❌ 刪除失敗，請檢查網路連線：${error.message}`);
     }
+}
 
 // 3. 建立新文章
 function startNewArticleCreation() {
@@ -3888,15 +3903,49 @@ function cancelArticleEdit() {
 }
 
 
-    function toggleArticleStatus(key) {
-        if (articlesCache[key]) {
-            articlesCache[key].status = articlesCache[key].status === 'published' ? 'unpublished' : 'published';
-            renderArticleManagementList();
-            populateTeacherArticlePickers();
-            populateStudentArticleDropdown();
-            saveAllDataToLocalStorage();
-        }
+// 【V12.1 最終修正版 - 移除 LocalStorage 依賴】
+async function toggleArticleStatus(key) {
+    const art = articlesCache[key];
+    if (!art) return;
+
+    // 1. 預先計算出新的狀態與提示文字
+    const newStatus = art.status === 'published' ? 'unpublished' : 'published';
+    const newStatusText = newStatus === 'published' ? '上架' : '下架';
+
+    // 2. 防呆確認
+    if (!confirm(`您確定要將篇章【${art.title}】的狀態改為「${newStatusText}」嗎？`)) {
+        return;
     }
+
+    try {
+        // 3. 核心：寫入 Firebase 雲端資料庫
+        const articleRef = db.collection("articles").doc(key);
+        await articleRef.update({
+            status: newStatus
+        });
+
+        // 4. 資料庫寫入成功後，只更新本地記憶體中的快取 (articlesCache)
+        art.status = newStatus;
+        
+        // ❌ 不再需要呼叫 saveAllDataToLocalStorage()
+
+        // 5. 重新渲染所有相關的 UI 介面
+        renderArticleManagementList();
+        populateTeacherArticlePickers();
+        
+        // 檢查並更新學生端下拉選單（若該函式存在）
+        if (typeof populateStudentArticleDropdown === 'function') {
+            populateStudentArticleDropdown();
+        }
+
+        alert(`✅ 雲端同步成功！已將【${art.title}】的狀態更新為「${newStatusText}」。`);
+
+    } catch (error) {
+        console.error("更新文章狀態時發生 Firebase 錯誤：", error);
+        alert(`❌ 更新失敗，請檢查網路連線。\n錯誤訊息：${error.message}`);
+    }
+}
+
 
 // 儲存/發布文章 (【V10.0 數據庫寫入版】)
 async function handlePublishArticle(e) {
@@ -4322,21 +4371,37 @@ function renderTeacherRewardsList() {
     console.log("✅ 獎品列表渲染成功！");
 }
 
-// 確保您也有 deleteReward 函式 (如果沒有，請加入這個基礎版本)
 async function deleteReward(id) {
-    if (!confirm('確定要永久刪除這個獎品嗎？此操作無法復原！')) {
+    // 1. 找出該獎品以顯示名稱，防呆更清楚
+    const reward = rewardsCache.find(r => r.id === id);
+    const rewardName = reward ? `【${reward.name}】` : "此獎品";
+
+    if (!confirm(`確定要永久刪除 ${rewardName} 嗎？此操作無法復原！`)) {
         return;
     }
+
     try {
         await db.collection('store_items').doc(id).delete();
-        // 從快取中移除
+
+        // 2. 從快取中移除
         rewardsCache = rewardsCache.filter(r => r.id !== id);
-        // 重新渲染列表
+
+        // 3. 安全機制：如果正在編輯該獎品，則重置編輯表單
+        if (typeof editingRewardId !== 'undefined' && editingRewardId === id) {
+            resetRewardForm();
+        }
+
+        // 4. 重新渲染列表（並嘗試同步學生商店）
         renderTeacherRewardsList();
-        alert('獎品刪除成功！');
+        if (typeof renderStudentStore === 'function') {
+            renderStudentStore();
+        }
+
+        alert('🎉 獎品刪除成功！');
+
     } catch (error) {
         console.error("刪除獎品失敗:", error);
-        alert('刪除獎品失敗，請查看控制台以獲取詳細資訊。');
+        alert(`❌ 刪除獎品失敗：${error.message}`);
     }
 }
 
