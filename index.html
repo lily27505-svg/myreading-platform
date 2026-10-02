@@ -203,80 +203,73 @@
             #article-body { padding: 16px; font-size: 1rem; max-width: 100%; }
         }
 
-        /* 🖨️ 列印樣式 */
-        @media print {
-            /* 1. 鎖定 A4 紙張與標準邊距（上下左右保留 1.5 cm 的黃金安全距離） */
-            @page { 
-                size: A4 portrait; 
-                margin: 15mm 15mm 15mm 15mm; 
-            }
+/* 🖨️ 列印樣式 (【終極鎖定版】) */
+@media print {
+    /* 1. 關鍵：直接定義頁面為 A4 尺寸，並設定黃金安全邊距 (1.5cm) */
+    @page {
+        size: A4 portrait;
+        margin: 1.5cm;
+    }
 
-            body { 
-                background: white; 
-                margin: 0; 
-                padding: 0; 
-                color: #000; 
-                /* 2. 強制鎖定字體與行高，防止因電腦預設字型不同而撐開版面 */
-                font-family: "Microsoft JhengHei", "Heiti TC", "Segoe UI", sans-serif !important;
-                line-height: 1.5 !important;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact;
-            }
+    /* 2. 讓 body 成為唯一的列印容器，並鎖定字體 */
+    body {
+        background: white !important;
+        margin: 0;
+        padding: 0;
+        color: #000;
+        font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
 
-            .container, header, .tab-buttons, #login-card { display: none !important; }
+    /* 3. 隱藏所有與列印無關的網頁元素 */
+    .container, header, .tab-buttons, #login-card, #main-teacher-system > header, .tab-buttons, .action-btn-group, .print-control-group select {
+        display: none !important;
+    }
 
-            #print-area { display: block !important; width: 100% !important; }
+    /* 4. 讓 #print-area 成為唯一可見的內容 */
+    #print-area {
+        display: block !important;
+        width: 100%;
+        height: auto;
+        border: none;
+        box-shadow: none;
+    }
 
-            /* 3. 強制手動分頁：當您在 HTML 中加入 <div class="page-break"></div> 時一定會乾淨換頁 */
-            .page-break { 
-                page-break-after: always; 
-                break-after: page;
-            }
+    /* 5. 確保 #print-area 內的 .print-card 填滿整個可列印區域 */
+    .print-card {
+        border: none !important;  /* 移除卡片自身邊框，避免雙重邊框 */
+        padding: 0 !important;     /* 移除內邊距，讓內容貼近安全邊界 */
+        margin: 0 !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        /* 關鍵：防止工作紙自身被切斷 */
+        break-inside: avoid;
+    }
 
-            .print-card { 
-                border: 2px solid #000; 
-                padding: 30px; 
-                margin-bottom: 20px; 
-                border-radius: 8px; 
-                /* 4. 關鍵：防止單個工作紙卡片被分頁「腰斬」切斷 */
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-            }
+    /* 6. 保護表格、段落和圖片不被從中腰斬 */
+    table, p, div, img, thead, tbody, tr {
+        break-inside: avoid !important;
+    }
 
-            .print-header { 
-                text-align: center; 
-                border-bottom: 2px solid #000; 
-                padding-bottom: 15px; 
-                margin-bottom: 20px; 
-                /* 防止標頭與後續內容脫節 */
-                page-break-after: avoid;
-                break-after: avoid;
-            }
+    /* 7. 確保表格標頭在換頁時能重複出現 (對長報表非常有用) */
+    thead {
+        display: table-header-group;
+    }
 
-            .print-table { 
-                width: 100%; 
-                border-collapse: collapse; 
-                margin-top: 15px; 
-                /* 防止表格在頁面邊緣被切開 */
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-            }
+    /* 8. 修正您原本 .print-table th 的背景色，確保列印可見 */
+    .print-table th {
+        background-color: #f0f0f0 !important;
+    }
+}
 
-            .print-table th, .print-table td { 
-                border: 1px solid #000; 
-                padding: 10px; 
-                text-align: left; 
-                font-size: 12pt; /* 微調字體至 12pt 更符合 A4 閱讀比例 */
-            }
+/* 確保螢幕上 #print-area 保持隱藏 */
+@media screen {
+    #print-area {
+        display: none;
+    }
+}
 
-            .print-table th { 
-                background-color: #f0f0f0 !important; 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
-        }
-
-        @media screen { #print-area { display: none; } }
 
         /* =========================================================
            🛠️ 教師端：管理表格排版修正 (1600px 最佳化)
@@ -5845,94 +5838,121 @@ ${targetData.content.replace(/\\n/g, '\n')}
     }
 
 
-// 🖨️ 產生並列印實體工作紙 (【最終防溢出加固版】)
-function printWorksheet(articleKey, diff) {
-    const art = articlesCache[articleKey];
-    if (!art) {
-        alert('錯誤：找不到該篇文章的資料！');
-        return;
-    }
+    // 🖨️ 產生並列印實體工作紙 (省略最外框 + 增加文本獨立外框 + 動態排版)
+    function printWorksheet(articleKey, diff) {
+        const art = articlesCache[articleKey];
+        if (!art) return;
+        
+        const diffName = diff === 'low' ? '初階' : (diff === 'medium' ? '進階' : '高階');
+        const questions = art.quizzes[diff] || [];
 
-    const diffName = diff === 'low' ? '初階' : (diff === 'medium' ? '進階' : '高階');
-    const questions = art.quizzes[diff] || [];
+        // 📝 針對不同難度設定動態排版變數
+        let config = {
+            baseFont: '14pt',       // 基礎內文字體
+            titleFont: '16pt',      // 區塊標題字體
+            lineHeight: '1.8',      // 內文行距
+            qMargin: '25px',        // 題目與題目之間的間距
+            optMargin: '8px',       // 選項行與行之間的間距
+            optCols: '100%'         // 選項欄位寬度 (100%=單欄直排, 50%=雙欄並排)
+        };
 
-    // 針對不同難度設定動態排版變數 (這部分保持不變，是正確的)
-    let config = {
-        baseFont: '14pt', titleFont: '16pt', lineHeight: '1.8',
-        qMargin: '25px', optMargin: '8px', optCols: '100%'
-    };
-    if (diff === 'low') {
-        config.baseFont = '15pt'; config.lineHeight = '1.8'; config.optCols = '100%';
-    } else if (diff === 'medium') {
-        config.baseFont = '13.5pt'; config.lineHeight = '1.7'; config.optCols = '50%'; config.qMargin = '18px';
-    } else if (diff === 'high') {
-        config.baseFont = '12pt'; config.titleFont = '14pt'; config.lineHeight = '1.5';
-        config.optCols = '50%'; config.qMargin = '15px'; config.optMargin = '4px';
-    }
+        if (diff === 'low') {
+            config.baseFont = '15pt';
+            config.lineHeight = '1.8';
+            config.optCols = '100%'; 
+        } else if (diff === 'medium') {
+            config.baseFont = '13.5pt';
+            config.lineHeight = '1.7';
+            config.optCols = '50%';  
+            config.qMargin = '18px';
+        } else if (diff === 'high') {
+            config.baseFont = '12pt'; 
+            config.titleFont = '14pt';
+            config.lineHeight = '1.5';
+            config.optCols = '50%';
+            config.qMargin = '15px';
+            config.optMargin = '4px';
+        }
 
-    // 組合題目區域 HTML (這部分也保持不變)
-    let qHtml = '';
-    if (questions.length === 0) {
-        qHtml = `<p style="font-size: ${config.baseFont};">本篇章尚未設定題目。</p>`;
-    } else {
-        questions.forEach((q, idx) => {
-            const pirlsInfo = PIRLS_LABELS[q.level] || { name: '閱讀理解' };
-            qHtml += `
-                <div style="margin-bottom: ${config.qMargin}; break-inside: avoid; page-break-inside: avoid;">
-                    <div style="font-weight: bold; font-size: ${config.baseFont}; margin-bottom: 8px; line-height: 1.4;">
-                        ${idx + 1}. ${q.q} <span style="font-size: 0.85em; color: #555; font-weight: normal;">[${pirlsInfo.name}]</span>
+        // 組合題目區域
+        let qHtml = '';
+        if (questions.length === 0) {
+            qHtml = `<p style="font-size: ${config.baseFont};">本篇章尚未設定題目。</p>`;
+        } else {
+            questions.forEach((q, idx) => {
+                const pirlsInfo = PIRLS_LABELS[q.level] || { name: '閱讀理解' };
+                qHtml += `
+                    <div style="margin-bottom: ${config.qMargin}; break-inside: avoid; page-break-inside: avoid;">
+                        
+                        <!-- 題幹 -->
+                        <div style="font-weight: bold; font-size: ${config.baseFont}; margin-bottom: 8px; line-height: 1.4;">
+                            ${idx + 1}. ${q.q} <span style="font-size: 0.85em; color: #555; font-weight: normal;">[${pirlsInfo.name}]</span>
+                        </div>
+                        
+                        <!-- 選項區域 (完美的懸掛縮排) -->
+                        <div style="margin-left: 15px; line-height: 1.5; font-size: ${config.baseFont}; display: flex; flex-wrap: wrap;">
+                            ${['A', 'B', 'C', 'D'].map((letter, i) => `
+                                <div style="width: ${config.optCols}; margin-bottom: ${config.optMargin}; display: flex; align-items: flex-start;">
+                                    <div style="width: 25px; flex-shrink: 0;">${letter}.</div>
+                                    <div style="flex: 1;">${q.options[i]}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <!-- ▼ 作答括號移至這裡：在選項最後方靠右對齊 ▼ -->
+                        <div style="text-align: right; font-size: ${config.baseFont}; margin-top: 4px; padding-right: 15px;">
+                            (&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)
+                        </div>
+                        
                     </div>
-                    <div style="margin-left: 15px; line-height: 1.5; font-size: ${config.baseFont}; display: flex; flex-wrap: wrap;">
-                        ${['A', 'B', 'C', 'D'].map((letter, i) => `
-                            <div style="width: ${config.optCols}; margin-bottom: ${config.optMargin}; display: flex; align-items: flex-start;">
-                                <div style="width: 25px; flex-shrink: 0;">${letter}.</div>
-                                <div style="flex: 1;">${(q.options && q.options[i]) ? q.options[i] : ''}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div style="text-align: right; font-size: ${config.baseFont}; margin-top: 4px; padding-right: 15px;">
-                        (&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)
-                    </div>
-                </div>
-            `;
-        });
-    }
+                `;
+            });
+        }
 
-    // ⭐⭐⭐【最終核心修改】⭐⭐⭐
-    // 我們在所有內容的最外層，包裹一個寬度固定的 div
-    // A4 寬度約 210mm，減去左右邊距各 15mm，內容區的安全寬度是 180mm
-    const html = `
-        <div style="width: 180mm; margin: 0 auto; font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif;">
-            <div class="print-card" style="border: none !important;">
+        // 組合整份工作紙的 HTML
+        // 修改亮點 1: border: none !important 省略外框，padding: 5mm 10mm 拓展可用版面
+        const html = `
+            <div class="print-card" style="border: none !important; padding: 5mm 10mm; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;">
+                
+                <!-- 標題與抬頭 -->
                 <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px;">
                     <h1 style="margin: 0 0 8px 0; font-size: 20pt;">閱讀理解訓練工作紙</h1>
                     <h2 style="margin: 0; font-size: 15pt; color: #333;">《${art.title}》— ${diffName}挑戰</h2>
                 </div>
+                
+                <!-- 姓名班級欄位 -->
                 <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14pt; line-height: 2;">
                     <div style="flex: 1;">班級：___________________</div>
                     <div style="flex: 1; text-align: center;">座號：_____________</div>
                     <div style="flex: 1.5; text-align: center;">姓名：_________________________</div>
                     <div style="flex: 1; text-align: right;">得分：____________ / ${questions.length * 10}</div>
                 </div>
+                
+                <!-- 閱讀篇章區塊 -->
                 <div style="margin-bottom: 25px;">
-                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 10px; font-size: ${config.titleFont};">閱讀篇章</h3>
+                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 10px; font-size: ${config.titleFont};"><i class="fa-solid fa-book-open"></i>閱讀篇章</h3>
+                    
+                    <!-- 修改亮點 2: 為文本加上實體框線 (border: 2px solid #000) 並增加 padding -->
                     <div style="border: 2px solid #000; border-radius: 8px; padding: 15px 20px; line-height: ${config.lineHeight}; font-size: ${config.baseFont}; white-space: pre-wrap; text-align: justify; box-sizing: border-box;">${art.content[diff]}</div>
                 </div>
+
+                <!-- 選擇題區塊 -->
                 <div>
-                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 15px; font-size: ${config.titleFont};">選擇題</h3>
+                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 15px; font-size: ${config.titleFont};"> <i class="fa-solid fa-pen-to-square"></i>  選擇題</h3>
                     ${qHtml}
                 </div>
-                <div style="text-align: center; color: #666; font-size: 9pt; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 30px;">
+                
+                <!-- 頁尾 -->
+                <div style="text-align: center; color: #666; font-size: 9pt; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 15px;">
                     - 炮台山循道衛理中學 閱讀平台自動生成 -
                 </div>
             </div>
-        </div>
-    `;
+        `;
 
-    // 將最終組合好的、寬度固定的 HTML 放入列印區並執行列印
-    document.getElementById('print-area').innerHTML = html;
-    window.print();
-}
+        document.getElementById('print-area').innerHTML = html;
+        window.print();
+    }
+
 
 
 /* ========================================================
