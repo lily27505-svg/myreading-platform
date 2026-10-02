@@ -5855,7 +5855,7 @@ ${targetData.content.replace(/\\n/g, '\n')}
         if (diff === 'low') {
             config.baseFont = '15pt';
             config.lineHeight = '1.8';
-            config.optCols = '100%'; 
+            config.optCols = '50%'; 
         } else if (diff === 'medium') {
             config.baseFont = '13.5pt';
             config.lineHeight = '1.7';
@@ -5928,8 +5928,8 @@ ${targetData.content.replace(/\\n/g, '\n')}
                 <div style="margin-bottom: 25px;">
                     <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 10px; font-size: ${config.titleFont};"><i class="fa-solid fa-book-open"></i>閱讀篇章</h3>
                     
-                    <!-- 修改亮點 2: 為文本加上實體框線 (border: 2px solid #000) 並增加 padding -->
-                    <div style="border: 2px solid #000; border-radius: 8px; padding: 15px 20px; line-height: ${config.lineHeight}; font-size: ${config.baseFont}; white-space: pre-wrap; text-align: justify; box-sizing: border-box;">${art.content[diff]}</div>
+                    <!-- 修改亮點 2: 為文本加上實體框線 (border: 1.5px solid #000) 並增加 padding -->
+                    <div style="border: 1.5px solid #000; border-radius: 8px; padding: 8px 12px; line-height: ${config.lineHeight}; font-size: ${config.baseFont}; white-space: pre-wrap; text-align: justify; box-sizing: border-box;">${art.content[diff]}</div>
                 </div>
 
                 <!-- 選擇題區塊 -->
