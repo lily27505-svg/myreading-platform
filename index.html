@@ -203,15 +203,14 @@
             #article-body { padding: 16px; font-size: 1rem; max-width: 100%; }
         }
 
-/* 🖨️ 列印樣式 (【終極鎖定版】) */
+/* 🖨️ 列印樣式 (【精準放行防走位版】) */
 @media print {
-    /* 1. 關鍵：直接定義頁面為 A4 尺寸，並設定黃金安全邊距 (1.5cm) */
+    /* 1. 鎖定 A4 紙張與標準邊距（上下左右保留 1.5 cm 的黃金安全距離） */
     @page {
         size: A4 portrait;
         margin: 1.5cm;
     }
 
-    /* 2. 讓 body 成為唯一的列印容器，並鎖定字體 */
     body {
         background: white !important;
         margin: 0;
@@ -222,42 +221,38 @@
         print-color-adjust: exact;
     }
 
-    /* 3. 隱藏所有與列印無關的網頁元素 */
+    /* 隱藏所有與列印無關的網頁元素 */
     .container, header, .tab-buttons, #login-card, #main-teacher-system > header, .tab-buttons, .action-btn-group, .print-control-group select {
         display: none !important;
     }
 
-    /* 4. 讓 #print-area 成為唯一可見的內容 */
     #print-area {
         display: block !important;
         width: 100%;
         height: auto;
-        border: none;
-        box-shadow: none;
     }
 
-    /* 5. 確保 #print-area 內的 .print-card 填滿整個可列印區域 */
     .print-card {
-        border: none !important;  /* 移除卡片自身邊框，避免雙重邊框 */
-        padding: 0 !important;     /* 移除內邊距，讓內容貼近安全邊界 */
+        border: none !important;  
+        padding: 0 !important;     
         margin: 0 !important;
         box-shadow: none !important;
         width: 100% !important;
-        /* 關鍵：防止工作紙自身被切斷 */
-        break-inside: avoid;
+        /* 💡 移除大容器的 break-inside: avoid，允許大容器自然換頁 */
     }
 
-    /* 6. 保護表格、段落和圖片不被從中腰斬 */
-    table, p, div, img, thead, tbody, tr {
+    /* 2. 💡 精準控制防斷裂：只防止「單個題目」或「單個表格」被切斷，而不是所有的 div */
+    .print-table, 
+    #print-area > div > div[style*="break-inside"] {
         break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }
 
-    /* 7. 確保表格標頭在換頁時能重複出現 (對長報表非常有用) */
+    /* 確保表格標頭在換頁時能重複出現 */
     thead {
         display: table-header-group;
     }
 
-    /* 8. 修正您原本 .print-table th 的背景色，確保列印可見 */
     .print-table th {
         background-color: #f0f0f0 !important;
     }
@@ -269,6 +264,7 @@
         display: none;
     }
 }
+
 
 
         /* =========================================================
