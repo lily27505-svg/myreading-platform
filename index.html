@@ -587,7 +587,7 @@
 <div class="container">
     <!-- 登入介面 HTML (保持不變) -->
     <div id="login-card" class="card" style="max-width: 400px; margin: 50px auto;">
-        <h2 id="login-title" style="text-align: center; color: #1e3a8a; margin-bottom: 20px;">👩‍🎓 學生閱讀平台</h2>
+        <h2 id="login-title" style="text-align: center; color: #1e3a8a; margin-bottom: 20px;"><i class="fa-solid fa-user-graduate" style="color: #2563eb; margin-right: 6px;"></i> 學生閱讀平台 </h2>
         <form id="login-form" onsubmit="event.preventDefault(); login();">
             <div id="student-login-section">
                 <div class="form-group">
@@ -601,7 +601,7 @@
             </div>
             <div id="teacher-login-section" style="display: none;">
                 <div style="background: #fef3c7; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
-                    <span style="color: #b45309;">🔒 教師安全登入通道</span>
+                    <span style="color: #b45309;"><i class="fa-solid fa-lock" style="color: #d97706; margin-right: 6px;"></i> 教師安全登入通道</span>
                 </div>
                 <div class="form-group">
                     <label for="teacher-login-username">教師帳號：</label>
@@ -624,7 +624,7 @@
             <div>
                 <h2 style="margin: 0; color: #1e3a8a;"><i class="fa-solid fa-school-flag"></i> 閱讀地下城：勇者試煉場</h2>
                 <small id="student-info-text">登入身份：chan_xm 陳小明 (1A班 05號)</small>
-                <button type="button" onclick="logout()" class="btn btn-sm btn-secondary" style="margin-left: 10px;">🚪 登出</button>
+                <button type="button" onclick="logout()" class="btn btn-sm btn-secondary" style="margin-left: 10px;"><i class="fa-solid fa-right-from-bracket" style="color: #64748b; margin-right: 4px;"></i> 登出</button>
             </div>
             <div class="badge-bar">
                 <span class="points-badge-total"><i class="fa-solid fa-medal" style="color: #a855f7; width: 20px;"></i> 學年總積點: <span id="user-total-points">85</span></span>
@@ -633,9 +633,9 @@
         </header>
 
         <div class="tab-buttons">
-            <button class="tab-btn active" onclick="switchStudentTab('reading', this)">📖 閱讀挑戰與答題</button>
+            <button class="tab-btn active" onclick="switchStudentTab('reading', this)"><i class="fa-solid fa-book-open" style="color: #2563eb; margin-right: 6px;"></i> 閱讀挑戰與答題</button>
             <button class="tab-btn" onclick="switchStudentTab('badges', this)"><i class="fa-solid fa-trophy" style="color: #f59e0b; margin-right: 8px;"></i> 我的榮譽徽章館</button>
-            <button class="tab-btn" onclick="switchStudentTab('history', this)">📜 個人閱讀成長歷程</button>
+            <button class="tab-btn" onclick="switchStudentTab('history', this)"><i class="fa-solid fa-scroll" style="color: #7c3aed; margin-right: 6px;"></i> 個人閱讀成長歷程</button>
             <button class="tab-btn" onclick="switchStudentTab('store', this)"><i class="fa-solid fa-gift" style="color: #ef4444; margin-right: 8px;"></i> 積分獎勵兌換中心</button>
         </div>
 
@@ -672,7 +672,7 @@
 
             <!-- 完成全篇章提示 -->
             <div id="all-completed-banner" class="card" style="display: none; background: #ecfdf5; border: 2px solid #6ee7b7; text-align: center; padding: 30px;">
-                <h3 style="color: #065f46; margin-top: 0;">🎉 太棒了！您已完成現階段所有發布的閱讀挑戰篇章！</h3>
+                <h3 style="color: #065f46; margin-top: 0;"><i class="fa-solid fa-party-horn" style="color: #059669; margin-right: 6px;"></i> 太棒了！您已完成現階段所有發布的閱讀挑戰篇章！</h3>
                 <p style="color: #047857; font-size: 1.05em; margin-bottom: 15px;">您在本階段的閱讀表現十分出色，請隨時留意老師發布的全新精選篇章，或前往積分獎勵中心兌換心儀禮品！</p>
                 <button type="button" class="btn btn-purple" onclick="switchStudentTab('store')"><i class="fa-solid fa-gift" style="color: #ef4444; margin-right: 8px;"></i> 前往兌換中心換領禮品</button>
                 <button type="button" class="btn btn-secondary" style="margin-left:8px;" onclick="switchStudentTab('history')">📜 回顧我的作答診斷</button>
@@ -733,10 +733,10 @@
                     <p id="article-body" style="line-height: 1.85; font-size: 1.05em; color: #334155; background: #fdfdfd; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; white-space: pre-wrap; margin-top: 12px;"></p>
                     <div class="reading-bar">
                         <div class="timer-badge">
-                            ⏱️ 建議閱讀沉浸時間：<span id="timer-text">00:00</span>
+                            <i class="fa-solid fa-stopwatch" style="color: #0284c7; margin-right: 6px;"></i> 建議閱讀沉浸時間：<span id="timer-text">00:00</span>
                         </div>
                         <div>
-                            <span id="pace-hint" style="font-size: 0.85em; color: #64748b; margin-right: 10px;">💡 請細心品味內文細節</span>
+                            <span id="pace-hint" style="font-size: 0.85em; color: #64748b; margin-right: 10px;"><i class="fa-regular fa-lightbulb" style="color: #eab308; margin-right: 6px;"></i> 請細心品味內文細節</span>
                             <button type="button" class="btn btn-sm btn-secondary" onclick="skipTimer()" style="display: none;">⚡ [測試專用] 跳過倒數</button>
                         </div>
                     </div>
@@ -826,16 +826,16 @@
     <div id="main-teacher-system" style="display: none;">
         <header style="background: #f0fdf4; padding: 14px 18px; border-radius: 8px; border: 1px solid #bbf7d0;">
             <div>
-                <h2 style="margin: 0; color: #166534;">👩‍🏫 閱讀平台 - 教學診斷與系統管理</h2>
+                <h2 style="margin: 0; color: #166534;"><i class="fa-solid fa-chalkboard-user" style="color: #166534; margin-right: 6px;"></i> 閱讀平台 - 教學診斷與系統管理</h2>
                 <small id="teacher-info-text">管理員：teacher_chan (陳老師)</small>
-                <button type="button" onclick="logout()" class="btn btn-sm btn-secondary" style="margin-left: 10px;">🚪 登出</button>
+                <button type="button" onclick="logout()" class="btn btn-sm btn-secondary" style="margin-left: 10px;"><i class="fa-solid fa-right-from-bracket" style="color: #64748b; margin-right: 4px;"></i> 登出</button>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <!-- ▼▼▼【新增】一鍵備份全系統資料庫 ▼▼▼ -->
                 <button type="button" class="btn btn-sm" style="background:#0284c7; color:white;" onclick="exportSystemDatabase()">
-                    📦 備份匯出全系統資料庫 (.json)
+                    <i class="fa-solid fa-box-archive" style="color: #ffffff; margin-right: 6px;"></i> 備份匯出全系統資料庫 (.json)
                 </button>
-                <button type="button" class="btn btn-sm btn-purple" onclick="exportExcelByCurrentScope()">📥 導出當前範疇診斷報表 (CSV)</button>
+                <button type="button" class="btn btn-sm btn-purple" onclick="exportExcelByCurrentScope()"><i class="fa-solid fa-file-arrow-down" style="color: #ffffff; margin-right: 6px;"></i> 導出當前範疇診斷報表 (CSV)</button>
             </div>
         </header>
         <div class="tab-buttons" style="margin-top: 15px;">
@@ -863,9 +863,9 @@
             </div>
             <!-- ▲▲▲【新增】全局時段/學年篩選器 ▲▲▲ -->
             <div style="margin-bottom: 15px;">
-                <button class="sub-tab-btn active" onclick="switchAnalyticsSubView('by-article', this)">📄 1. 篇章與思維層次診斷</button>
-                <button class="sub-tab-btn" onclick="switchAnalyticsSubView('by-student', this)">👤 2. 個別學生認知雷達</button>
-                <button class="sub-tab-btn" onclick="switchAnalyticsSubView('by-class', this)">🏫 3. 全班參與及能力分佈 (支援多班勾選)</button>
+                <button class="sub-tab-btn active" onclick="switchAnalyticsSubView('by-article', this)"><i class="fa-regular fa-file-lines" style="color: #2563eb; margin-right: 6px;"></i> 1. 篇章與思維層次診斷</button>
+                <button class="sub-tab-btn" onclick="switchAnalyticsSubView('by-student', this)"><i class="fa-solid fa-user-gear" style="color: #0d9488; margin-right: 6px;"></i> 2. 個別學生認知雷達</button>
+                <button class="sub-tab-btn" onclick="switchAnalyticsSubView('by-class', this)"><i class="fa-solid fa-school" style="color: #4f46e5; margin-right: 6px;"></i> 3. 全班參與及能力分佈</button>
             </div>
             <!-- 篇章檢視 -->
             <div id="subview-by-article" class="card">
@@ -1054,7 +1054,7 @@
 
                     <div style="display:flex; align-items:center; gap:6px; flex:1; min-width: 240px;">
                         <input type="text" id="article-keyword-input" class="form-control" placeholder="搜尋標題或內文關鍵字..." style="padding: 6px 10px;" onkeydown="if(event.key==='Enter'){renderArticleManagementList();}">
-                        <button type="button" class="btn btn-purple btn-sm" onclick="renderArticleManagementList()">🔍 搜尋</button>
+                        <button type="button" class="btn btn-purple btn-sm" onclick="renderArticleManagementList()"><i class="fa-solid fa-magnifying-glass" style="color: #ffffff; margin-right: 4px;"></i> 搜尋</button>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="resetArticleFilters()">重設</button>
                     </div>
                 </div>
@@ -1397,7 +1397,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
                         <h4 style="margin:0;">📋 名冊管理、帳號鎖定與刪除</h4>
                         <div style="display:flex; gap:6px;">
-                            <button type="button" class="btn btn-sm btn-danger" onclick="batchDeleteStudents()" style="background:#991b1b;">🗑️ 批量刪除所選</button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="batchDeleteStudents()" style="background:#991b1b;"><i class="fa-solid fa-trash-can" style="color: #ffffff; margin-right: 4px;"></i> 批量刪除所選</button>
                             <button type="button" class="btn btn-sm btn-danger" onclick="batchSetStudentLock(true)">🔒 批量鎖定所選</button>
                             <button type="button" class="btn btn-sm btn-success" onclick="batchSetStudentLock(false)">🔓 批量解鎖所選</button>
                         </div>
