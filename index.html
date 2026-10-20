@@ -4085,7 +4085,7 @@ async function handlePublishArticle(e) {
                                 <input type="number" class="form-control edit-q-correct-${diff}" value="${item.correct || 0}" min="0" max="3">
                             </div>
                         </div>
-                        <label><small>選項 A,B,C,D (以逗號分隔)：</small></label>
+                        <label><small>選項格式 (支援 A: B: C: D: 或 A. B. C. D. 或逗號)：</small></label>
                         <input type="text" class="form-control edit-q-opts-${diff}" value="${(item.options || []).join(', ')}" style="margin-bottom:6px;">
                         <label><small>💡 鷹架提示：</small></label>
                         <input type="text" class="form-control edit-q-hint-${diff}" value="${item.hint || ''}">
@@ -4096,28 +4096,44 @@ async function handlePublishArticle(e) {
         });
     }
 
-    function collectQuizzesFromEditor() {
-        const result = { low: [], medium: [], high: [] };
-        ['low', 'medium', 'high'].forEach(diff => {
-            const titles = document.querySelectorAll(`.edit-q-title-${diff}`);
-            const levels = document.querySelectorAll(`.edit-q-level-${diff}`);
-            const corrects = document.querySelectorAll(`.edit-q-correct-${diff}`);
-            const optsList = document.querySelectorAll(`.edit-q-opts-${diff}`);
-            const hints = document.querySelectorAll(`.edit-q-hint-${diff}`);
-            titles.forEach((tInput, i) => {
-                if (tInput.value.trim() === '') return;
-                result[diff].push({
-                    q: tInput.value.trim(),
-                    level: levels[i] ? levels[i].value : 'retrieval',
-                    correct: parseInt(corrects[i] ? corrects[i].value : 0),
-                    options: optsList[i] ? optsList[i].value.split(',').map(s => s.trim()) : [],
-                    hint: hints[i] ? hints[i].value.trim() : ''
-                });
+function collectQuizzesFromEditor() {
+    const result = { low: [], medium: [], high: [] };
+    ['low', 'medium', 'high'].forEach(diff => {
+        const titles = document.querySelectorAll(`.edit-q-title-${diff}`);
+        const levels = document.querySelectorAll(`.edit-q-level-${diff}`);
+        const corrects = document.querySelectorAll(`.edit-q-correct-${diff}`);
+        const optsList = document.querySelectorAll(`.edit-q-opts-${diff}`);
+        const hints = document.querySelectorAll(`.edit-q-hint-${diff}`);
+        
+        titles.forEach((tInput, i) => {
+            if (tInput.value.trim() === '') return;
+            
+            let rawOptsText = optsList[i] ? optsList[i].value : '';
+            let optionsArray = [];
+
+            // 🛡️ 方案二核心：利用正規表達式精準抓取帶有 A: B: C: D: 或 A. B. C. D. 的選項
+            const matches = rawOptsText.match(/[A-Da-d][\.:：、\)]\s*([^\n,，]+)/g);
+            
+            if (matches && matches.length >= 4) {
+                // 如果成功匹配到帶有字母前綴的選項，自動拔除前綴並保留內容
+                optionsArray = matches.slice(0, 4).map(m => m.replace(/^[A-Da-d][\.:：、\)]\s*/, '').trim());
+            } else {
+                // 備用防呆：若未依新格式輸入，則自動退回用半形或全形逗號切分
+                optionsArray = rawOptsText.split(/,|，/).map(s => s.trim()).filter(s => s.length > 0);
+            }
+
+            result[diff].push({
+                q: tInput.value.trim(),
+                level: levels[i] ? levels[i].value : 'retrieval',
+                correct: parseInt(corrects[i] ? corrects[i].value : 0),
+                options: optionsArray,
+                hint: hints[i] ? hints[i].value.trim() : ''
             });
         });
-        return result;
-    }
-
+    });
+    return result;
+}
+	
 function toggleArticleDateSort() {
     articleDateSortDirection = (articleDateSortDirection === 'desc') ? 'asc' : 'desc';
     const indicator = document.getElementById('art-sort-indicator');
@@ -6227,20 +6243,20 @@ function closeStreakModalAndReturn() {
 ## 1. 文本層階設計與「字詞鷹架」
 
 ### 【低階版】（適合 SEN、語文基礎較薄弱學生）
-- 字數規格：約 250 - 350 字。
+- 字數規格：約 450 字。
 - 鷹架原則：
   - 語法：句構極短小直接（單句為主），多用常見詞彙，避免成語及雙重否定句。
   - 情節/論點：故事類則「因果關係極為直觀、時間線線性發展」；非故事類則「觀點單一、段落主題句極明顯」。
   - 排版暗示：在重要詞彙或轉折處使用物理標記（如括號補充說明、底線提示）。
 
 ### 【進階版】（適合主流語文及理解能力稍弱學生）
-- 字數規格：約 450 - 550 字。
+- 字數規格：約 600 字。
 - 鷹架原則：
   - 語法：句構流暢完整（包含複句與關聯詞，如「雖然……但是」），保留核心概念與必要的細節描寫。
   - 情節/論點：故事類包含「簡單的插敘或雙線因果」；非故事類著重「層次分明的因果推理與舉例說明」。
 
 ### 【高階版】（適合主流中等/稍弱學生）
-- 字數規格：約 700 - 800 字。
+- 字數規格：約 750 字。
 - 鷹架原則：
   - 語法：用字精鍊、典雅且自然，避免硬塞晦澀大詞。善用段落轉折、對比、暗喻等修辭。
   - 情節/論點：故事類具備「深層角色動機、情性對比或開放式結局」；非故事類具備「學術厚度、雙重觀點對比（如傳統與新發現的衝突、個體與群體的辯證）」。
@@ -6252,13 +6268,14 @@ function closeStreakModalAndReturn() {
 
 - 【低階題目鷹架】：主要測試「提取資訊」（2題）與「直接推論」（1題）。題目重點字眼需加上引號，選項干擾項的長度與結構與正確答案相似，避免語意陷阱。
 - 【進階題目鷹架】：測試「提取資訊」（1題）、「直接推論」（2題）與「詮釋整合」（1題）。題目開始要求學生辨識文中的承上啟下與段落因果。
-- 【高階題目鷹架】：測試「直接推論」（1題）、「詮釋整合」（2題）與「檢驗評估」（2題）。著重探討寫作手法、作者觀點、象徵意義、角色心理轉變或論證的嚴密性。
+- 【高階題目鷹架】：測試「直接推論」（1題）、「詮釋整合」（2題）與「檢驗評估」（2題）。著重探討承上啟下與段落因果、作者觀點、象徵意義、角色心理轉變。
 
 # 核心任務與規範（嚴格遵守）
 
 1. 文本來源處理：若為選項 A，以此進行難度與結構改寫；若為選項 B，必須選用一篇真實存在的文章或文學故事，並明確標示標題與原作者。
-2. 免責聲明與出處（不計入字數）：在每個層階的 `content` 結尾，必須換行並加上這段文字：「(註：本文由 AI 調整生成。原出處：[填入原作者/書名或真實來源])」。
-3. 嚴格格式輸出：你必須「只」輸出合法的 JSON，嚴禁任何 markdown 包裹、說明性文字，確保可被程式直接解析。
+2. 文章風格與原文一致
+3. 免責聲明與出處（不計入字數）：在每個層階的 `content` 結尾，必須換行並加上這段文字：「(註：本文由 AI 調整生成。原出處：[填入原作者/書名或真實來源])」。
+4. 嚴格格式輸出：你必須「只」輸出合法的 JSON，嚴禁任何 markdown 包裹、說明性文字，確保可被程式直接解析。
 
 # 輸出格式 (JSON)
 
@@ -6274,7 +6291,9 @@ function closeStreakModalAndReturn() {
       "questions": [
         {
           "question": "題目描述 (低階：清晰指出段落或關鍵詞)...",
-          "options": {"A": "選項A", "B": "選項B", "C": "選項C", "D": "選項D"},
+          "options": {"A": "選項內容", "B": "選項內容", "C": "選項內容", "D": "選項內容"
+          },
+          "options_text_format": "A: 選項一, B: 選項二, C: 選項三, D: 選項四"
           "answer": "A",
           "pirls_type": "提取明確陳述的資訊",
           "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
@@ -6287,7 +6306,9 @@ function closeStreakModalAndReturn() {
       "questions": [
         {
           "question": "題目描述...",
-          "options": {"A": "選項A", "B": "選項B", "C": "選項C", "D": "選項D"},
+          "options": {"A": "選項內容", "B": "選項內容", "C": "選項內容", "D": "選項內容"
+          },
+          "options_text_format": "A: 選項一, B: 選項二, C: 選項三, D: 選項四"
           "answer": "B",
           "pirls_type": "直接進行推論",
           "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
@@ -6300,7 +6321,9 @@ function closeStreakModalAndReturn() {
       "questions": [
         {
           "question": "題目描述...",
-          "options": {"A": "選項A", "B": "選項B", "C": "選項C", "D": "選項D"},
+          "options": {"A": "選項內容", "B": "選項內容", "C": "選項內容", "D": "選項內容"
+          },
+          "options_text_format": "A: 選項一, B: 選項二, C: 選項三, D: 選項四"
           "answer": "C",
           "pirls_type": "詮釋、整合觀點和資訊 / 檢驗、評估作者寫作手法和文本內容",
           "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
