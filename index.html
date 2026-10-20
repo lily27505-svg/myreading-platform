@@ -4052,49 +4052,59 @@ async function handlePublishArticle(e) {
     }
 
 
-    function renderQuizEditorFields(quizzesObj) {
-        const qData = quizzesObj || {low:[], medium:[], high:[]};
-        const targetCounts = { low: 3, medium: 4, high: 5 };
+function renderQuizEditorFields(quizzesObj) {
+    const qData = quizzesObj || {low:[], medium:[], high:[]};
+    const targetCounts = { low: 3, medium: 4, high: 5 };
 
-        ['low', 'medium', 'high'].forEach(diff => {
-            const container = document.getElementById(`${diff}-quiz-fields`);
-            if (!container) return;
-            container.innerHTML = '';
-            
-            const list = qData[diff] || [];
-            const count = targetCounts[diff];
+    ['low', 'medium', 'high'].forEach(diff => {
+        const container = document.getElementById(`${diff}-quiz-fields`);
+        if (!container) return;
+        container.innerHTML = '';
+        
+        const list = qData[diff] || [];
+        const count = targetCounts[diff];
 
-            for (let idx = 0; idx < count; idx++) {
-                const item = list[idx] || {}; // 如果沒有題目，則使用空物件
-                let html = `
-                    <div style="background:#fff; border:1px solid #cbd5e1; padding:10px; border-radius:6px; margin-bottom:10px;">
-                        <label><strong>第 ${idx+1} 題題目：</strong></label>
-                        <input type="text" class="form-control edit-q-title-${diff}" value="${item.q || ''}" style="margin-bottom:6px;">
-                        <div style="display:flex; gap:8px; margin-bottom:6px;">
-                            <div style="flex:1;">
-                                <label><small>PIRLS 維度：</small></label>
-                                <select class="form-control edit-q-level-${diff}">
-                                    <option value="retrieval" ${item.level==='retrieval'?'selected':''}>提取訊息</option>
-                                    <option value="inference" ${item.level==='inference'?'selected':''}>直接推論</option>
-                                    <option value="interpretation" ${item.level==='interpretation'?'selected':''}>統整解釋</option>
-                                    <option value="evaluation" ${item.level==='evaluation'?'selected':''}>評價反思</option>
-                                </select>
-                            </div>
-                            <div style="flex:1;">
-                                <label><small>正解索引 (0=A, 1=B...):</small></label>
-                                <input type="number" class="form-control edit-q-correct-${diff}" value="${item.correct || 0}" min="0" max="3">
-                            </div>
+        for (let idx = 0; idx < count; idx++) {
+            const item = list[idx] || {}; 
+            const opts = item.options || ['', '', '', '']; // 確保至少有 4 個選項
+
+            let html = `
+                <div style="background:#fff; border:1px solid #cbd5e1; padding:10px; border-radius:6px; margin-bottom:10px;">
+                    <label><strong>第 ${idx+1} 題題目：</strong></label>
+                    <input type="text" class="form-control edit-q-title-${diff}" value="${item.q || ''}" style="margin-bottom:6px;">
+                    <div style="display:flex; gap:8px; margin-bottom:6px;">
+                        <div style="flex:1;">
+                            <label><small>PIRLS 維度：</small></label>
+                            <select class="form-control edit-q-level-${diff}">
+                                <option value="retrieval" ${item.level==='retrieval'?'selected':''}>提取訊息</option>
+                                <option value="inference" ${item.level==='inference'?'selected':''}>直接推論</option>
+                                <option value="interpretation" ${item.level==='interpretation'?'selected':''}>統整解釋</option>
+                                <option value="evaluation" ${item.level==='evaluation'?'selected':''}>評價反思</option>
+                            </select>
                         </div>
-                        <label><small>選項格式 (支援 A: B: C: D: 或 A. B. C. D. 或逗號)：</small></label>
-                        <input type="text" class="form-control edit-q-opts-${diff}" value="${(item.options || []).join(', ')}" style="margin-bottom:6px;">
-                        <label><small>💡 鷹架提示：</small></label>
-                        <input type="text" class="form-control edit-q-hint-${diff}" value="${item.hint || ''}">
+                        <div style="flex:1;">
+                            <label><small>正解索引 (0=A, 1=B...):</small></label>
+                            <input type="number" class="form-control edit-q-correct-${diff}" value="${item.correct || 0}" min="0" max="3">
+                        </div>
                     </div>
-                `;
-                container.innerHTML += html;
-            }
-        });
-    }
+                    
+                    <!-- 🟢 改用四個獨立方格分別填寫 A、B、C、D 選項 -->
+                    <label><small>選項 A、B、C、D (獨立方格)：</small></label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                        <input type="text" class="form-control edit-q-opt-a-${diff}" value="${opts[0] || ''}" placeholder="A: 選項內容">
+                        <input type="text" class="form-control edit-q-opt-b-${diff}" value="${opts[1] || ''}" placeholder="B: 選項內容">
+                        <input type="text" class="form-control edit-q-opt-c-${diff}" value="${opts[2] || ''}" placeholder="C: 選項內容">
+                        <input type="text" class="form-control edit-q-opt-d-${diff}" value="${opts[3] || ''}" placeholder="D: 選項內容">
+                    </div>
+
+                    <label><small>💡 鷹架提示：</small></label>
+                    <input type="text" class="form-control edit-q-hint-${diff}" value="${item.hint || ''}">
+                </div>
+            `;
+            container.innerHTML += html;
+        }
+    });
+}
 
 function collectQuizzesFromEditor() {
     const result = { low: [], medium: [], high: [] };
@@ -4102,25 +4112,24 @@ function collectQuizzesFromEditor() {
         const titles = document.querySelectorAll(`.edit-q-title-${diff}`);
         const levels = document.querySelectorAll(`.edit-q-level-${diff}`);
         const corrects = document.querySelectorAll(`.edit-q-correct-${diff}`);
-        const optsList = document.querySelectorAll(`.edit-q-opts-${diff}`);
         const hints = document.querySelectorAll(`.edit-q-hint-${diff}`);
         
+        // 分別抓取 A、B、C、D 四個獨立方格的元素
+        const optAs = document.querySelectorAll(`.edit-q-opt-a-${diff}`);
+        const optBs = document.querySelectorAll(`.edit-q-opt-b-${diff}`);
+        const optCs = document.querySelectorAll(`.edit-q-opt-c-${diff}`);
+        const optDs = document.querySelectorAll(`.edit-q-opt-d-${diff}`);
+
         titles.forEach((tInput, i) => {
             if (tInput.value.trim() === '') return;
             
-            let rawOptsText = optsList[i] ? optsList[i].value : '';
-            let optionsArray = [];
-
-            // 🛡️ 方案二核心：利用正規表達式精準抓取帶有 A: B: C: D: 或 A. B. C. D. 的選項
-            const matches = rawOptsText.match(/[A-Da-d][\.:：、\)]\s*([^\n,，]+)/g);
-            
-            if (matches && matches.length >= 4) {
-                // 如果成功匹配到帶有字母前綴的選項，自動拔除前綴並保留內容
-                optionsArray = matches.slice(0, 4).map(m => m.replace(/^[A-Da-d][\.:：、\)]\s*/, '').trim());
-            } else {
-                // 備用防呆：若未依新格式輸入，則自動退回用半形或全形逗號切分
-                optionsArray = rawOptsText.split(/,|，/).map(s => s.trim()).filter(s => s.length > 0);
-            }
+            // 將四個獨立方格的內容組合成陣列
+            let optionsArray = [
+                optAs[i] ? optAs[i].value.trim() : '',
+                optBs[i] ? optBs[i].value.trim() : '',
+                optCs[i] ? optCs[i].value.trim() : '',
+                optDs[i] ? optDs[i].value.trim() : ''
+            ];
 
             result[diff].push({
                 q: tInput.value.trim(),
@@ -6280,57 +6289,66 @@ function closeStreakModalAndReturn() {
 # 輸出格式 (JSON)
 
 {
-  "topic": "文章主題",
-  "textType": "故事類 / 非故事類",
-  "difficultyStrategy": "濃縮情節結構 / 縮短故事長度 / 不適用(非故事類)",
-  "articleTitle": "最終確定的文章/故事標題 (若有作者請加上，如：背影 - 朱自清)",
-  "versions": {
-    "low": {
-      "wordCount": "約300字",
-      "content": "低階版文章完整內容...\\n\\n(註：本文由 AI 調整生成。原出處：...)",
-      "questions": [
-        {
-          "question": "題目描述 (低階：清晰指出段落或關鍵詞)...",
-          "options": {"A": "選項內容", "B": "選項內容", "C": "選項內容", "D": "選項內容"
+  "topic": "文章主題",
+  "textType": "故事類 / 非故事類",
+  "difficultyStrategy": "濃縮情節結構 / 縮短故事長度 / 不適用(非故事類)",
+  "articleTitle": "最終確定的文章/故事標題 (若有作者請加上，如：背影 - 朱自清)",
+  "versions": {
+    "low": {
+      "wordCount": "約450字",
+      "content": "低階版文章完整內容...\\n\\n(註：本文由 AI 調整生成。原出處：...)",
+      "questions": [
+        {
+          "question": "題目描述 (低階：清晰指出段落或關鍵詞)...",
+          "options": {
+            "A": "選項A的內容（不需包含A:前綴）",
+            "B": "選項B的內容",
+            "C": "選項C的內容",
+            "D": "選項D的內容"
           },
-          "options_text_format": "A: 選項一, B: 選項二, C: 選項三, D: 選項四"
-          "answer": "A",
-          "pirls_type": "提取明確陳述的資訊",
-          "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
-        }
-      ]
-    },
-    "mid": {
-      "wordCount": "約500字",
-      "content": "進階版文章完整內容...\\n\\n(註：本文由 AI 調整生成。原出處：...)",
-      "questions": [
-        {
-          "question": "題目描述...",
-          "options": {"A": "選項內容", "B": "選項內容", "C": "選項內容", "D": "選項內容"
+          "answer": "A",
+          "pirls_type": "提取明確陳述的資訊",
+          "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
+        }
+      ]
+    },
+    "mid": {
+      "wordCount": "約600字",
+      "content": "進階版文章完整內容...\\n\\n(註：本文由 AI 調整生成。原出處：...)",
+      "questions": [
+        {
+          "question": "題目描述...",
+          "options": {
+            "A": "選項A的內容",
+            "B": "選項B的內容",
+            "C": "選項C的內容",
+            "D": "選項D的內容"
           },
-          "options_text_format": "A: 選項一, B: 選項二, C: 選項三, D: 選項四"
-          "answer": "B",
-          "pirls_type": "直接進行推論",
-          "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
-        }
-      ]
-    },
-    "high": {
-      "wordCount": "約750字",
-      "content": "高階版文章完整內容...\\n\\n(註：本文由 AI 調整生成。原出處：...)",
-      "questions": [
-        {
-          "question": "題目描述...",
-          "options": {"A": "選項內容", "B": "選項內容", "C": "選項內容", "D": "選項內容"
+          "answer": "B",
+          "pirls_type": "直接進行推論",
+          "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
+        }
+      ]
+    },
+    "high": {
+      "wordCount": "約750字",
+      "content": "高階版文章完整內容...\\n\\n(註：本文由 AI 調整生成。原出處：...)",
+      "questions": [
+        {
+          "question": "題目描述...",
+          "options": {
+            "A": "選項A的內容",
+            "B": "選項B的內容",
+            "C": "選項C的內容",
+            "D": "選項D的內容"
           },
-          "options_text_format": "A: 選項一, B: 選項二, C: 選項三, D: 選項四"
-          "answer": "C",
-          "pirls_type": "詮釋、整合觀點和資訊 / 檢驗、評估作者寫作手法和文本內容",
-          "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
-        }
-      ]
-    }
-  }
+          "answer": "C",
+          "pirls_type": "詮釋、整合觀點和資訊 / 檢驗、評估作者寫作手法和文本內容",
+          "scaffolding_hint": "💡【引導提示】：請在這裡寫下為學生量身打造的思維引導，字數在 30-50 字左右，切勿直接透露答案。"
+        }
+      ]
+    }
+  }
 }
 </textarea>
 <!-- ▲▲▲ 隱藏的 Prompt 存放區 ▲▲▲ -->
