@@ -4066,7 +4066,8 @@ function renderQuizEditorFields(quizzesObj) {
 
         for (let idx = 0; idx < count; idx++) {
             const item = list[idx] || {}; 
-            const opts = item.options || ['', '', '', '']; // 確保至少有 4 個選項
+            // 🛡️ 確保 options 一定是陣列，且防呆處理
+            const opts = Array.isArray(item.options) ? item.options : ['', '', '', ''];
 
             let html = `
                 <div style="background:#fff; border:1px solid #cbd5e1; padding:10px; border-radius:6px; margin-bottom:10px;">
@@ -4083,18 +4084,17 @@ function renderQuizEditorFields(quizzesObj) {
                             </select>
                         </div>
                         <div style="flex:1;">
-                            <label><small>正解索引 (0=A, 1=B...):</small></label>
-                            <input type="number" class="form-control edit-q-correct-${diff}" value="${item.correct || 0}" min="0" max="3">
+                            <label><small>正解索引 (0=A, 1=B, 2=C, 3=D):</small></label>
+                            <input type="number" class="form-control edit-q-correct-${diff}" value="${item.correct !== undefined ? item.correct : 0}" min="0" max="3">
                         </div>
                     </div>
                     
-                    <!-- 🟢 改用四個獨立方格分別填寫 A、B、C、D 選項 -->
                     <label><small>選項 A、B、C、D (獨立方格)：</small></label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
-                        <input type="text" class="form-control edit-q-opt-a-${diff}" value="${opts[0] || ''}" placeholder="A: 選項內容">
-                        <input type="text" class="form-control edit-q-opt-b-${diff}" value="${opts[1] || ''}" placeholder="B: 選項內容">
-                        <input type="text" class="form-control edit-q-opt-c-${diff}" value="${opts[2] || ''}" placeholder="C: 選項內容">
-                        <input type="text" class="form-control edit-q-opt-d-${diff}" value="${opts[3] || ''}" placeholder="D: 選項內容">
+                        <input type="text" class="form-control edit-q-opt-a-${diff}" value="${opts[0] || ''}" placeholder="A 選項內容">
+                        <input type="text" class="form-control edit-q-opt-b-${diff}" value="${opts[1] || ''}" placeholder="B 選項內容">
+                        <input type="text" class="form-control edit-q-opt-c-${diff}" value="${opts[2] || ''}" placeholder="C 選項內容">
+                        <input type="text" class="form-control edit-q-opt-d-${diff}" value="${opts[3] || ''}" placeholder="D 選項內容">
                     </div>
 
                     <label><small>💡 鷹架提示：</small></label>
