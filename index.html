@@ -4107,14 +4107,15 @@ function renderQuizEditorFields(quizzesObj) {
 }
 
 function collectQuizzesFromEditor() {
+    // 兼容 medium 和 mid 兩種寫法，避免欄位對不上
     const result = { low: [], medium: [], high: [] };
+    
     ['low', 'medium', 'high'].forEach(diff => {
         const titles = document.querySelectorAll(`.edit-q-title-${diff}`);
         const levels = document.querySelectorAll(`.edit-q-level-${diff}`);
         const corrects = document.querySelectorAll(`.edit-q-correct-${diff}`);
         const hints = document.querySelectorAll(`.edit-q-hint-${diff}`);
         
-        // 分別抓取 A、B、C、D 四個獨立方格的元素
         const optAs = document.querySelectorAll(`.edit-q-opt-a-${diff}`);
         const optBs = document.querySelectorAll(`.edit-q-opt-b-${diff}`);
         const optCs = document.querySelectorAll(`.edit-q-opt-c-${diff}`);
@@ -4123,7 +4124,6 @@ function collectQuizzesFromEditor() {
         titles.forEach((tInput, i) => {
             if (tInput.value.trim() === '') return;
             
-            // 將四個獨立方格的內容組合成陣列
             let optionsArray = [
                 optAs[i] ? optAs[i].value.trim() : '',
                 optBs[i] ? optBs[i].value.trim() : '',
@@ -4140,6 +4140,8 @@ function collectQuizzesFromEditor() {
             });
         });
     });
+    
+    console.log("🟢 成功收集到的編輯器題目資料：", result);
     return result;
 }
 	
