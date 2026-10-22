@@ -4052,85 +4052,109 @@ async function handlePublishArticle(e) {
     }
 
 
-    function renderQuizEditorFields(quizzesObj) {
-        const qData = quizzesObj || {low:[], medium:[], high:[]};
-        const targetCounts = { low: 3, medium: 4, high: 5 };
+function renderQuizEditorFields(quizzesObj) {
+    const qData = quizzesObj || {low:[], medium:[], high:[]};
+    const targetCounts = { low: 3, medium: 4, high: 5 };
 
-        ['low', 'medium', 'high'].forEach(diff => {
-            const container = document.getElementById(`${diff}-quiz-fields`);
-            if (!container) return;
-            container.innerHTML = '';
+    ['low', 'medium', 'high'].forEach(diff => {
+        const container = document.getElementById(`${diff}-quiz-fields`);
+        if (!container) return;
+        container.innerHTML = '';
+        
+        const list = qData[diff] || [];
+        const count = targetCounts[diff];
+
+        for (let idx = 0; idx < count; idx++) {
+            const item = list[idx] || {}; // 如果沒有題目，則使用空物件
             
-            const list = qData[diff] || [];
-            const count = targetCounts[diff];
-
-            for (let idx = 0; idx < count; idx++) {
-                const item = list[idx] || {}; // 如果沒有題目，則使用空物件
-                let html = `
-                    <div style="background:#fff; border:1px solid #cbd5e1; padding:10px; border-radius:6px; margin-bottom:10px;">
-                        <label><strong>第 ${idx+1} 題題目：</strong></label>
-                        <input type="text" class="form-control edit-q-title-${diff}" value="${item.q || ''}" style="margin-bottom:6px;">
-                        <div style="display:flex; gap:8px; margin-bottom:6px;">
-                            <div style="flex:1;">
-                                <label><small>PIRLS 維度：</small></label>
-                                <select class="form-control edit-q-level-${diff}">
-                                    <option value="retrieval" ${item.level==='retrieval'?'selected':''}>提取訊息</option>
-                                    <option value="inference" ${item.level==='inference'?'selected':''}>直接推論</option>
-                                    <option value="interpretation" ${item.level==='interpretation'?'selected':''}>統整解釋</option>
-                                    <option value="evaluation" ${item.level==='evaluation'?'selected':''}>評價反思</option>
-                                </select>
-                            </div>
-                            <div style="flex:1;">
-                                <label><small>正解索引 (0=A, 1=B...):</small></label>
-                                <input type="number" class="form-control edit-q-correct-${diff}" value="${item.correct || 0}" min="0" max="3">
-                            </div>
-                        </div>
-                        <label><small>選項 A, B, C, D：</small></label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
-                            <input type="text" class="form-control edit-q-opt-a-${diff}" placeholder="選項 A" value="${item.options ? (item.options[0] || '') : ''}">
-                            <input type="text" class="form-control edit-q-opt-b-${diff}" placeholder="選項 B" value="${item.options ? (item.options[1] || '') : ''}">
-                            <input type="text" class="form-control edit-q-opt-c-${diff}" placeholder="選項 C" value="${item.options ? (item.options[2] || '') : ''}">
-                            <input type="text" class="form-control edit-q-opt-d-${diff}" placeholder="選項 D" value="${item.options ? (item.options[3] || '') : ''}">
-                        </div>
-                        <label><small>💡 鷹架提示：</small></label>
-
-                        <input type="text" class="form-control edit-q-hint-${diff}" value="${item.hint || ''}">
-                    </div>
-                `;
-                container.innerHTML += html;
+            // 🛡️ 兼容防呆：處理 options 可能是 Array 或是 Object 的情況
+            let optA = '', optB = '', optC = '', optD = '';
+            if (Array.isArray(item.options)) {
+                optA = item.options[0] || '';
+                optB = item.options[1] || '';
+                optC = item.options[2] || '';
+                optD = item.options[3] || '';
+            } else if (item.options && typeof item.options === 'object') {
+                optA = item.options.A || '';
+                optB = item.options.B || '';
+                optC = item.options.C || '';
+                optD = item.options.D || '';
             }
-        });
-    }
 
-    function collectQuizzesFromEditor() {
-        const result = { low: [], medium: [], high: [] };
-        ['low', 'medium', 'high'].forEach(diff => {
-            const titles = document.querySelectorAll(`.edit-q-title-${diff}`);
-            const levels = document.querySelectorAll(`.edit-q-level-${diff}`);
-            const corrects = document.querySelectorAll(`.edit-q-correct-${diff}`);
-            const optsA = document.querySelectorAll(`.edit-q-opt-a-${diff}`);
-            const optsB = document.querySelectorAll(`.edit-q-opt-b-${diff}`);
-            const optsC = document.querySelectorAll(`.edit-q-opt-c-${diff}`);
-            const optsD = document.querySelectorAll(`.edit-q-opt-d-${diff}`);
-            const hints = document.querySelectorAll(`.edit-q-hint-${diff}`);
-            titles.forEach((tInput, i) => {
-                if (tInput.value.trim() === '') return;
-                result[diff].push({
-                    q: tInput.value.trim(),
-                    level: levels[i] ? levels[i].value : 'retrieval',
-                    correct: parseInt(corrects[i] ? corrects[i].value : 0),
-                    options: [
-                        optsA[i] ? optsA[i].value.trim() : '',
-                        optsB[i] ? optsB[i].value.trim() : '',
-                        optsC[i] ? optsC[i].value.trim() : '',
-                        optsD[i] ? optsD[i].value.trim() : ''
-                    ],
-                    hint: hints[i] ? hints[i].value.trim() : ''
-                });
+            // 🛡️ 防呆處理：跳脫雙引號，避免 HTML 標籤屬性損壞
+            optA = String(optA).replace(/"/g, '&quot;');
+            optB = String(optB).replace(/"/g, '&quot;');
+            optC = String(optC).replace(/"/g, '&quot;');
+            optD = String(optD).replace(/"/g, '&quot;');
+            let qText = String(item.q || '').replace(/"/g, '&quot;');
+            let hintText = String(item.hint || '').replace(/"/g, '&quot;');
+
+            let html = `
+                <div style="background:#fff; border:1px solid #cbd5e1; padding:10px; border-radius:6px; margin-bottom:10px;">
+                    <label><strong>第 ${idx+1} 題題目：</strong></label>
+                    <input type="text" class="form-control edit-q-title-${diff}" value="${qText}" style="margin-bottom:6px;">
+                    <div style="display:flex; gap:8px; margin-bottom:6px;">
+                        <div style="flex:1;">
+                            <label><small>PIRLS 維度：</small></label>
+                            <select class="form-control edit-q-level-${diff}">
+                                <option value="retrieval" ${item.level==='retrieval'?'selected':''}>提取訊息</option>
+                                <option value="inference" ${item.level==='inference'?'selected':''}>直接推論</option>
+                                <option value="interpretation" ${item.level==='interpretation'?'selected':''}>統整解釋</option>
+                                <option value="evaluation" ${item.level==='evaluation'?'selected':''}>評價反思</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label><small>正解索引 (0=A, 1=B...):</small></label>
+                            <input type="number" class="form-control edit-q-correct-${diff}" value="${item.correct || 0}" min="0" max="3">
+                        </div>
+                    </div>
+                    <label><small>選項 A, B, C, D：</small></label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                        <input type="text" class="form-control edit-q-opt-a-${diff}" placeholder="選項 A" value="${optA}">
+                        <input type="text" class="form-control edit-q-opt-b-${diff}" placeholder="選項 B" value="${optB}">
+                        <input type="text" class="form-control edit-q-opt-c-${diff}" placeholder="選項 C" value="${optC}">
+                        <input type="text" class="form-control edit-q-opt-d-${diff}" placeholder="選項 D" value="${optD}">
+                    </div>
+                    <label><small>💡 鷹架提示：</small></label>
+                    <input type="text" class="form-control edit-q-hint-${diff}" value="${hintText}">
+                </div>
+            `;
+            container.innerHTML += html;
+        }
+    });
+}
+
+function collectQuizzesFromEditor() {
+    const result = { low: [], medium: [], high: [] };
+    ['low', 'medium', 'high'].forEach(diff => {
+        const titles = document.querySelectorAll(`.edit-q-title-${diff}`);
+        const levels = document.querySelectorAll(`.edit-q-level-${diff}`);
+        const corrects = document.querySelectorAll(`.edit-q-correct-${diff}`);
+        const optsA = document.querySelectorAll(`.edit-q-opt-a-${diff}`);
+        const optsB = document.querySelectorAll(`.edit-q-opt-b-${diff}`);
+        const optsC = document.querySelectorAll(`.edit-q-opt-c-${diff}`);
+        const optsD = document.querySelectorAll(`.edit-q-opt-d-${diff}`);
+        const hints = document.querySelectorAll(`.edit-q-hint-${diff}`);
+        
+        titles.forEach((tInput, i) => {
+            if (tInput.value.trim() === '') return;
+            result[diff].push({
+                q: tInput.value.trim(),
+                level: levels[i] ? levels[i].value : 'retrieval',
+                correct: parseInt(corrects[i] ? corrects[i].value : 0),
+                // ⚠️ 統一轉回 Array 格式，避免破壞學生端測驗畫面
+                options: [
+                    optsA[i] ? optsA[i].value.trim() : '',
+                    optsB[i] ? optsB[i].value.trim() : '',
+                    optsC[i] ? optsC[i].value.trim() : '',
+                    optsD[i] ? optsD[i].value.trim() : ''
+                ],
+                hint: hints[i] ? hints[i].value.trim() : ''
             });
         });
-        return result;
-    }
+    });
+    return result;
+}
 
 function toggleArticleDateSort() {
     articleDateSortDirection = (articleDateSortDirection === 'desc') ? 'asc' : 'desc';
@@ -5603,10 +5627,18 @@ function parseAndFillAI() {
                     if (titles[idx]) {
                         titles[idx].value = q.question;
                         
-                        if (optsA[idx]) optsA[idx].value = q.options.A || '';
-                        if (optsB[idx]) optsB[idx].value = q.options.B || '';
-                        if (optsC[idx]) optsC[idx].value = q.options.C || '';
-                        if (optsD[idx]) optsD[idx].value = q.options.D || '';
+                        // 防呆處理 AI 的選項 (可能是物件或陣列)
+                        if (Array.isArray(q.options)) {
+                            if (optsA[idx]) optsA[idx].value = q.options[0] || '';
+                            if (optsB[idx]) optsB[idx].value = q.options[1] || '';
+                            if (optsC[idx]) optsC[idx].value = q.options[2] || '';
+                            if (optsD[idx]) optsD[idx].value = q.options[3] || '';
+                        } else if (q.options && typeof q.options === 'object') {
+                            if (optsA[idx]) optsA[idx].value = q.options.A || '';
+                            if (optsB[idx]) optsB[idx].value = q.options.B || '';
+                            if (optsC[idx]) optsC[idx].value = q.options.C || '';
+                            if (optsD[idx]) optsD[idx].value = q.options.D || '';
+                        }
                         
                         const ansMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
                         corrects[idx].value = ansMap[q.answer] !== undefined ? ansMap[q.answer] : 0;
@@ -5619,12 +5651,12 @@ function parseAndFillAI() {
                             }
                         }
                         levels[idx].value = pLevel;
-                        // ⭐ 核心修正：優先使用 AI 生成的 scaffolding_hint。如果沒有，才使用罐頭提示作為 Back局 備份。
-        if (hints[idx]) {
-            hints[idx].value = q.scaffolding_hint || `💡 思考線索：請回到文本中尋找關於「${q.question.substring(0,10)}...」的細節。`;
-        }
-    }
-});
+                        
+                        if (hints[idx]) {
+                            hints[idx].value = q.scaffolding_hint || `💡 思考線索：請回到文本中尋找關於「${q.question.substring(0,10)}...」的細節。`;
+                        }
+                    }
+                });
 
                 if (typeof renderProofreadPreview === 'function') {
                     renderProofreadPreview(targetData, levelName, finalTitle);
@@ -5632,21 +5664,16 @@ function parseAndFillAI() {
             }
         });
 
-        // 🌟 模擬滑鼠自動點擊展開按鈕
         setTimeout(() => {
-            // 尋找網頁上所有帶有「展開/收合」或有 data-bs-toggle 屬性的按鈕
             const expandButtons = document.querySelectorAll('button, a, [data-toggle="collapse"], [data-bs-toggle="collapse"]');
-            
             expandButtons.forEach(btn => {
                 const btnText = btn.innerText || btn.textContent || "";
-                // 如果按鈕文字包含「展開」，且目前是關閉狀態 (collapsed)，就點擊它！
                 if (btnText.includes('展開') || btn.classList.contains('collapsed') || btn.getAttribute('aria-expanded') === 'false') {
-                    btn.click(); // 代替你按下這個按鈕
+                    btn.click(); 
                 }
             });
-        }, 300); // 延遲 0.3 秒執行，確保內容都填完了才按
+        }, 300); 
 
-        // 確保這裡只有一個 alert
         alert(`<i class="fa-solid fa-circle-check"></i> 魔法發生了！\n\n系統已成功解析並自動為你填妥：\n- 三級文章內容\n- 共計 12 條測驗題目、選項與 PIRLS 標籤！\n\n請老師快速檢查後即可按下儲存發佈！`);
 
     } catch (e) {
@@ -5654,6 +5681,7 @@ function parseAndFillAI() {
         alert("❌ JSON 解析失敗！請確認貼上的文字是乾淨的 JSON 格式。");
     }
 }
+
 
 
 // 取代原本的 renderProofreadPreview 函數
@@ -6238,7 +6266,7 @@ function closeStreakModalAndReturn() {
 - 難度調節策略：
     1. 濃縮情節結構（簡化故事主線、刪除次要枝節，保留核心寓意與因果）
     2. 縮短故事長度（保留完整情節骨架，但大幅精簡場景描寫與修辭對白）
-	3. 按目標年級修訂
+    3. 按目標年級修訂
 
 # 難度分層與鷹架設計指標（嚴格遵守）
 
@@ -6275,9 +6303,9 @@ function closeStreakModalAndReturn() {
 # 核心任務與規範（嚴格遵守）
 
 1. 文本來源處理：必須選用一篇真實存在的文章或文學故事，並明確標示標題與原作者，並保留原文寫作風格。
-2. 生成之文章寫作風格須與原文一致。
-3. 免責聲明與出處（不計入字數）：在每個層階的 `content` 結尾，必須換行並加上這段文字：「(註：本文由 AI 調整生成。原出處：[填入原作者/書名或真實來源])」。
-4. 嚴格格式輸出：你必須「只」輸出合法的 JSON，嚴禁任何 markdown 包裹、說明性文字，確保可被程式直接解析。
+2. 生成之文章必須與原文寫作風格一致。
+2. 免責聲明與出處（不計入字數）：在每個層階的 `content` 結尾，必須換行並加上這段文字：「(註：本文由 AI 調整生成。原出處：[填入原作者/書名或真實來源])」。
+3. 嚴格格式輸出：你必須「只」輸出合法的 JSON，嚴禁任何 markdown 包裹、說明性文字，確保可被程式直接解析。
 
 # 輸出格式 (JSON)
 
