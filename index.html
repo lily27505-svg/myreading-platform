@@ -16,6 +16,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
 
+<!-- 引入 SheetJS 工具，用於產生多個分頁的 Excel (.xlsx) -->
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
     <style>
         /* =========================================================
            ✨ V2.0 現代化專業教育平台 Design System (大螢幕最佳化版)
@@ -1150,9 +1153,15 @@
         </div>
 
         <!-- 原始文章完整連結 (緊接在班級設定下方) -->
-        <div class="form-group" style="margin-top: 15px;">
-            <label>可選填：原始文章完整連結 (學生完成測驗後及歷程可見)</label>
-            <input type="url" id="new-art-link" class="form-control" placeholder="https://...">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px;">
+            <div class="form-group">
+                <label>可選填：原始文章完整連結 (學生完成測驗後可見)</label>
+                <input type="url" id="new-art-link" class="form-control" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>可選填：圖書館索書號 (若有實體書將提示學生借閱)</label>
+                <input type="text" id="new-art-call-number" class="form-control" placeholder="例如：857.9 1044">
+            </div>
         </div>
 
         <!-- 3. 【👀 預覽畫面顯示區】 -->
@@ -1241,10 +1250,24 @@
                 <div class="card">
                     <h4 id="reward-form-title">➕ 新增 / 編輯獎品庫存</h4>
                     <form onsubmit="handleSaveReward(event)">
-                        <div class="form-group">
-                            <label>獎品名稱：</label>
-                            <input type="text" id="reward-name-input" class="form-control" placeholder="例如：精美金屬書籤" required>
-                        </div>
+			<div class="form-group">
+  			  <label>獎品名稱：</label>
+			    <input type="text" id="reward-name-input" class="form-control" placeholder="例如：精美金屬書籤" required>
+			</div>
+			<div class="form-group">
+			    <label>獎品圖片 URL (選填)：</label>
+			    <input type="url" id="reward-image-input" class="form-control" placeholder="例如：https://example.com/image.png">
+			</div>
+			<div class="form-group" style="display: flex; gap: 10px;">
+		    <div style="flex: 1;">
+  		      <label>兌換開始時間：</label>
+  		      <input type="datetime-local" id="reward-start-input" class="form-control">
+ 		   </div>
+   		 <div style="flex: 1;">
+  		      <label>兌換結束時間：</label>
+ 		       <input type="datetime-local" id="reward-end-input" class="form-control">
+ 		   </div>
+</div>
                         <div class="form-group">
                             <label>兌換所需現積分：</label>
                             <input type="number" id="reward-cost-input" class="form-control" min="1" value="30" required>
@@ -1285,61 +1308,135 @@
             </div>
         </div>
 
-        <!-- 教師分頁 4: 手動與批量加分 -->
+        <!-- 教師分頁 4: 積分與紙本工作紙錄入 -->
         <div id="teacher-bonus-points" style="display: none;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div class="card">
-                    <h4>☑️ 勾選特定學生加分</h4>
-                    <form onsubmit="handleMultiCheckBonus(event)">
-                        <div class="form-group">
-                            <label>班級快篩：</label>
-                            <select id="bonus-filter-class" class="form-control" onchange="filterStudentCheckboxList(this.value)">
-                                <option value="ALL">全部班級</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                                <label style="margin:0;">學生名冊 (可多選)：</label>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="toggleSelectAllStudents(true)">全選</button>
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="toggleSelectAllStudents(false)">取消</button>
-                                </div>
-                            </div>
-                            <div id="student-checkbox-container" style="max-height: 180px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 8px; border-radius: 6px;"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>加分點數：</label>
-                            <input type="number" id="bonus-multi-points" class="form-control" value="10" required>
-                        </div>
-                        <div class="form-group">
-                            <label>加分原因 / 激勵理由：</label>
-                            <input type="text" id="bonus-multi-reason" class="form-control" placeholder="例如：課堂主動分享心得" required>
-                        </div>
-                        <button type="submit" class="btn btn-warning" style="width: 100%;">發放自選學生積分</button>
-                    </form>
+
+            <!-- 📥 頂部：批量 CSV 上傳區 (超精簡收納版) -->
+            <div class="card" style="border-top: 4px solid #10b981; margin-bottom: 25px; padding: 20px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;">
+                    <div>
+                        <h4 style="margin: 0; color: #047857; font-size: 1.15em;"><i class="fa-solid fa-file-csv" style="margin-right: 6px;"></i>批量紙本工作紙匯入 (CSV)</h4>
+                        <p style="color: #64748b; font-size: 0.85em; margin: 4px 0 0 0;">於 Excel 快速輸入多位學生的答案並上傳，系統將自動批改。</p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px;">
+                        <button class="btn" style="background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; font-size: 0.95em; padding: 8px 16px;" onclick="downloadPaperTemplate()">
+                            📥 1. 下載空白模板與代碼表
+                        </button>
+                        <label class="btn btn-warning" style="margin: 0; cursor: pointer; text-align: center; font-size: 0.95em; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); padding: 8px 16px;">
+                            📤 2. 上傳已填妥的 CSV 檔案
+                            <input type="file" id="paper-csv-upload" accept=".csv" style="display: none;" onchange="handlePaperCSVUpload(event)">
+                        </label>
+                    </div>
                 </div>
-                <div class="card">
-                    <h4>🏫 全班 / 全校批量激勵加分</h4>
-                    <form onsubmit="handleBatchClassBonus(event)">
-                        <div class="form-group">
-                            <label>目標對象：</label>
-                            <select id="bonus-batch-class-picker" class="form-control">
-                                <option value="ALL">🌟 全校所有學生</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>每人點數：</label>
-                            <input type="number" id="bonus-batch-points" class="form-control" value="15" required>
-                        </div>
-                        <div class="form-group">
-                            <label>加分備註：</label>
-                            <input type="text" id="bonus-batch-reason" class="form-control" placeholder="例如：全校早讀熱情激勵" required>
-                        </div>
-                        <button type="submit" class="btn btn-purple" style="width: 100%;">發放全班 / 全校積分</button>
-                    </form>
+
+                <!-- 預覽與除錯區 (預設隱藏，上傳後展開) -->
+                <div id="paper-preview-section" style="display: none; border: 1px dashed #10b981; border-radius: 8px; overflow: hidden; margin-top: 20px; background: #ecfdf5;">
+                    <div style="padding: 12px 16px; border-bottom: 1px dashed #a7f3d0; display: flex; justify-content: space-between; align-items: center;">
+                        <strong id="paper-preview-title" style="font-size: 0.95em; color: #065f46;">預覽上傳資料</strong>
+                        <button id="paper-confirm-btn" class="btn btn-success btn-sm" style="display: none; font-weight: bold; border-radius: 6px; padding: 6px 20px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);" onclick="confirmPaperUpload()">
+                            ✔️ 3. 確認無誤並寫入資料庫
+                        </button>
+                    </div>
+                    <div style="max-height: 400px; overflow-y: auto; padding: 10px; background: white;">
+                        <table class="data-table" style="font-size: 0.85em; margin: 0; width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th style="padding: 10px;">狀態</th>
+                                    <th style="padding: 10px;">學生 (代碼)</th>
+                                    <th style="padding: 10px;">文章 (代碼)</th>
+                                    <th style="padding: 10px;">判定難度</th>
+                                    <th style="padding: 10px;">作答解析</th>
+                                    <th style="padding: 10px;">自動計分</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paper-preview-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+
+            <!-- 下半部：分為左右兩塊 (加分區 與 單筆錄入) -->
+            <div style="display: flex; flex-wrap: wrap; gap: 25px;">
+                
+                <!-- 🎯 左側/主區：自選學生批量加分 -->
+                <div class="card" style="flex: 2; min-width: 450px; border-top: 4px solid #8b5cf6; margin-bottom: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 15px;">
+                        <h4 style="margin: 0; color: #5b21b6; font-size: 1.15em;">✨ 勾選特定學生加分</h4>
+                        <span style="color: #64748b; font-size: 0.85em;">課堂表現、活動參與等額外加分</span>
+                    </div>
+                    
+                    <form onsubmit="handleMultiCheckBonus(event)">
+                        <!-- 控制列 (橫向排列) -->
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="font-size: 0.85em; font-weight: bold; margin-bottom: 4px; display: block; color: #475569;">班級快篩：</label>
+                                <select id="bonus-filter-class" class="form-control" style="padding: 8px;" onchange="filterStudentCheckboxList(this.value)">
+                                    <option value="ALL">全部班級</option>
+                                </select>
+                            </div>
+                            <div style="flex: 0.8; min-width: 90px;">
+                                <label style="font-size: 0.85em; font-weight: bold; margin-bottom: 4px; display: block; color: #475569;">加分點數：</label>
+                                <input type="number" id="bonus-multi-points" class="form-control" style="padding: 8px;" value="10" required>
+                            </div>
+                            <div style="flex: 2; min-width: 180px;">
+                                <label style="font-size: 0.85em; font-weight: bold; margin-bottom: 4px; display: block; color: #475569;">激勵理由：</label>
+                                <input type="text" id="bonus-multi-reason" class="form-control" style="padding: 8px;" placeholder="如：課堂主動分享心得" required>
+                            </div>
+                            <div style="flex: 1; min-width: 120px;">
+                                <button type="submit" class="btn" style="width: 100%; background: #8b5cf6; color: white; padding: 10px; font-size: 0.95em; border-radius: 6px;">
+                                    <i class="fa-solid fa-gift"></i> 發放積分
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 學生名單 (標籤化密集排版) -->
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <label style="margin:0; font-weight: bold; color: #334155; font-size: 0.9em;">請勾選要加分的學生：</label>
+                                <div>
+                                    <button type="button" class="btn btn-sm" style="background:#e2e8f0; color:#475569; padding: 4px 8px; font-size: 0.8em;" onclick="toggleSelectAllStudents(true)">全選</button>
+                                    <button type="button" class="btn btn-sm" style="background:#f1f5f9; color:#64748b; border: 1px solid #cbd5e1; padding: 4px 8px; font-size: 0.8em;" onclick="toggleSelectAllStudents(false)">清除</button>
+                                </div>
+                            </div>
+                            <div id="student-checkbox-container" style="max-height: 250px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; background: #ffffff;">
+                                <!-- JS 會把這裡變成 grid 排版的標籤 -->
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ✍️ 右側：單筆紙本極速盲打區 -->
+                <div class="card" style="flex: 1; min-width: 280px; max-width: 380px; border-top: 4px solid #3b82f6; margin-bottom: 0;">
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="margin: 0; color: #1d4ed8; font-size: 1.15em;"><i class="fa-solid fa-keyboard" style="margin-right: 6px;"></i>單筆紙本輸入區</h4>
+                        <p style="color: #64748b; font-size: 0.8em; margin-top: 6px; line-height: 1.5;">適用於少數補交。支援純數字連續盲打輸入。</p>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85em; color: #475569;">👤 學生代碼 </label>
+                        <input type="text" id="bonus-multi-reason" class="form-control" style="padding: 8px;" placeholder="如：3B 04號 = 3204" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85em; color: #475569;">📄 文章代碼 </label>
+                        <input type="text" id="bonus-multi-reason" class="form-control" style="padding: 8px;" placeholder="已印於工作紙上，如：1001" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="font-size: 0.85em; color: #475569;">✍️ 學生答案 <span style="font-weight:normal; color:#94a3b8;">(1=A,2=B,3=C,0=空)</span></label>
+                       <input type="text" id="bonus-multi-reason" class="form-control" style="padding: 8px;" placeholder="初階3題填: 124" required>
+                    </div>
+                    <button type="button" class="btn" style="width: 100%; background: #3b82f6; color: white; padding: 12px; font-size: 1.05em; border-radius: 8px; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);" onclick="submitSinglePaper()">
+                        🚀 自動批改並寫入
+                    </button>
+                </div>
+
+            </div>
         </div>
+
+
+
+
+
 
         <!-- 教師分頁 5: 學生名冊管理 (已新增單一刪除與批量刪除學生) -->
         <div id="teacher-manage-students" style="display: none;">
@@ -1437,20 +1534,112 @@
         <!-- 教師分頁 6: 兌換審核與退分管理 -->
         <div id="teacher-rewards-admin" style="display: none;">
             <div class="card">
-                <h4>📋 學生獎品兌換申請清單 (支援確認發放與取消退分)</h4>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>申請時間</th>
-                            <th>學生資料</th>
-                            <th>兌換禮品</th>
-                            <th>扣除點數</th>
-                            <th>狀態</th>
-                            <th>審核操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reward-admin-tbody"></tbody>
-                </table>
+                <h4>📋 學生獎品兌換申請清單 (支援批量操作、篩選與分頁)</h4>
+<style>
+    .filter-ctrl {
+        height: 36px !important;
+        padding: 4px 10px !important;
+        font-size: 14px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        box-sizing: border-box !important;
+    }
+    .filter-btn {
+        height: 36px !important;
+        padding: 0 14px !important;
+        font-size: 14px !important;
+        border-radius: 6px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        border: none !important;
+        cursor: pointer;
+        color: white;
+        font-weight: bold;
+    }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .filter-label {
+        font-weight: bold;
+        font-size: 13px;
+        color: #475569;
+        margin: 0;
+    }
+</style>
+<!-- 終極版：控制面板 (單行緊湊排版) -->
+<div style="background: #f8fafc; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+
+<div class="filter-group">
+        <label class="filter-label">🎁 獎品：</label>
+        <select id="reward-filter" class="filter-ctrl" style="width: 130px;" onchange="changeRedemptionFilters()">
+            <option value="all">全部</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label class="filter-label">📌 狀態：</label>
+        <select id="status-filter" class="filter-ctrl" style="width: 110px;" onchange="changeRedemptionFilters()">
+            <option value="all">全部</option>
+            <option value="pending">⏳ 待領取</option>
+            <option value="completed">✅ 已領取</option>
+            <option value="cancelled">❌ 已取消</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label class="filter-label">🧑‍🎓 班別/姓名：</label>
+        <input type="text" id="student-filter" class="filter-ctrl" style="width: 120px;" placeholder="3A 或 陳小明" oninput="changeRedemptionFilters()">
+    </div>
+
+    <div class="filter-group">
+        <label class="filter-label">📅 核發/處理日期(開始)：</label>
+        <input type="date" id="admin-start-date" class="filter-ctrl" style="width: 130px;">
+    </div>
+
+    <div class="filter-group">
+        <label class="filter-label">📅 核發/處理日期(結束)：</label>
+        <input type="date" id="admin-end-date" class="filter-ctrl" style="width: 130px;">
+    </div>
+
+    <!-- 按鈕區 (自動推到最右邊) -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto;">
+        <button class="filter-btn" style="background: #64748b;" onclick="changeRedemptionFilters()">🔍 搜尋</button>
+        <button class="filter-btn" style="background: #2563eb;" onclick="exportRedemptionsExcel()">📥 匯出</button>
+        <button class="filter-btn" style="background: #16a34a;" onclick="batchFulfillRewards()">✔️ 批量核發</button>
+        <button class="filter-btn" style="background: #dc2626;" onclick="batchRejectRewards()">❌ 批量拒絕</button>
+    </div>
+</div>
+    
+<table class="data-table">
+    <thead>
+        <tr>
+            <!-- 新增：全選 Checkbox -->
+            <th style="width: 40px; text-align: center;">
+                <input type="checkbox" id="select-all-redemptions" onclick="toggleAllRedemptions(this)">
+            </th>
+            <th>申請時間</th>
+            <th>班別</th>
+            <th>學生姓名</th>
+            <th>獎品名稱</th>
+            <th>扣除積分</th>
+            <th>狀態</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody id="reward-admin-tbody">
+        <!-- 內容由 JS 產生 -->
+    </tbody>
+</table>
+
+<!-- 新增：分頁按鈕容器 -->
+<div id="redemption-pagination" style="margin-top: 15px; text-align: center;">
+    <!-- 分頁按鈕由 JS 產生 -->
+</div>
+
             </div>
         </div>
     </div>
@@ -1542,7 +1731,6 @@ function initializeApp() {
         handleFatalError("Firebase 初始化失敗！", error, loginBtn);
     }
 }
-
 
 
 
@@ -1688,7 +1876,9 @@ studentSubmissionsCache = submissionsSnap.docs.map(doc => ({ id: doc.id, ...doc.
 rewardsCache = rewardsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 redemptionsCache = redemptionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-			console.log("📚 學生個人資料下載並快取成功!");
+	console.log("📚 學生個人資料下載並快取成功!");
+        if (typeof renderStudentStore === 'function') renderStudentStore();
+        if (typeof renderStudentRedemptionHistory === 'function') renderStudentRedemptionHistory();
 				
 
             // 【重要】在所有資料都準備好之後，才執行渲染畫面的函式
@@ -2789,7 +2979,13 @@ async function finishArticleQuiz(earned, isPerfect, pickedArr, upgradeBonus = 0)
 
         const bonusMsg = upgradeBonus > 0 ? `<br><span style="color:#e11d48; font-weight:bold;">🚀 恭喜達成升級挑戰！額外獲得 +${upgradeBonus} 激勵積分！</span>` : '';
         const linkBtnHtml = (art && art.fullArticleLink) ? `<a href="${art.fullArticleLink}" target="_blank" class="btn btn-secondary btn-sm" style="margin-top:10px; margin-left:8px; text-decoration:none;">🔗 閱讀完整原文</a>` : '';
-        
+// ✨ 新增圖書館提示框
+        const libraryHtml = (art && art.libraryCallNumber) ? `
+            <div style="margin-top:12px; padding: 10px; background: #fffbeb; border: 2px dashed #facc15; color: #92400e; border-radius: 8px; text-align: left;">
+                <i class="fa-solid fa-book" style="color:#d97706; font-size:1.2em; margin-right:6px;"></i>
+                <strong>好消息！本校圖書館有實體書。</strong><br>
+                歡迎同學前往圖書館借閱，索書號：<strong style="font-size:1.2em; background:#fde68a; padding:2px 8px; border-radius:4px; margin-left:6px;">${art.libraryCallNumber}</strong>
+            </div>` : '';        
         const resultBox = document.getElementById('quiz-result');
         if (resultBox) {
             resultBox.style.display = 'block';
@@ -2801,6 +2997,7 @@ async function finishArticleQuiz(earned, isPerfect, pickedArr, upgradeBonus = 0)
                 學年累計總積點：<strong>${currentUser.totalPoints}</strong> | 現可用點數：<strong>${currentUser.currentPoints}</strong>。<br>
                 <button type="button" class="btn btn-purple btn-sm" style="margin-top:10px;" onclick="handleNextArticleAfterCompletion()"><i class="fa-solid fa-book-open"></i> 繼續挑戰其他推薦篇章</button>
                 ${linkBtnHtml}
+                ${libraryHtml}  <!-- ✨ 把圖書館提示框加在這裡 -->
             `;
         }
 
@@ -2913,18 +3110,25 @@ function handleNextArticleAfterCompletion() {
 		if (art && art.fullArticleLink) {
         actionHtml += ` <a href="${art.fullArticleLink}" target="_blank" class="btn btn-sm btn-secondary" style="padding:4px 8px; font-size:0.85em; margin-left:4px;">🔗 查看篇章</a>`;
     }
+// ✨ 新增這段：如果該文章有實體書，在表格操作區也顯示索書號標籤
+                if (art && art.libraryCallNumber) {
+                    actionHtml += ` <span class="status-tag" style="background:#fefce8; color:#b45309; border: 1px solid #fde047; margin-left:4px;" title="圖書館有實體書">📚 索書號:${art.libraryCallNumber}</span>`;
+                }
             }
 
             let bonusTag = (s.upgradeBonus && s.upgradeBonus > 0) ? `<small style="color:#e11d48; display:block;">(含升級獎勵+${s.upgradeBonus})</small>` : '';
+
+// 新增一個判斷：如果有秒數就顯示秒數，沒有的話就顯示灰色的「紙本作答」
+            let timeDisplay = (s.timeSec !== undefined && s.timeSec !== null) ? `${s.timeSec} 秒` : '<span style="color:#94a3b8; font-size:0.9em;">紙本作答</span>';
 
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${title}</strong></td>
                     <td><span class="status-tag ${s.diff === 'manual_bonus' ? 'tag-recommend' : 'tag-published'}">${category}</span></td>
                     <td>${diffMap[s.diff] || s.diff}</td>
-                    <td>${s.timeSec} 秒</td>
+		    <td>${timeDisplay}</td>
                     <td><strong style="color:var(--success);">+${s.score}</strong> ${bonusTag}</td>
-                    <td>${s.submittedAt}</td>
+                    <td>${s.submittedAt? s.submittedAt.substring(0, 10) : ''}</td>
                     <td>${actionHtml}</td>
                 </tr>
             `;
@@ -3018,6 +3222,16 @@ function getFilteredSubmissions() {
 
     // ▲▲▲【新增】日期過濾引擎 ▲▲▲
 
+    // ▼▼▼ 時間格式化小工具 (將秒數轉為 分/秒) ▼▼▼
+    function formatTimeDisplay(seconds) {
+        if (seconds === undefined || seconds === null || isNaN(seconds) || seconds === '') return '紙本作答';
+        if (seconds === 0) return '0秒';
+        const m = Math.floor(seconds / 60);
+        const s = Math.round(seconds % 60);
+        return m > 0 ? `${m}分 ${s}秒` : `${s}秒`;
+    }
+
+
     function calculateStudentPirlsStats(username) {
         const subs = getFilteredSubmissions().filter(s => s.username === username);
         let levelStats = { retrieval: { total: 0, correct: 0 }, inference: { total: 0, correct: 0 }, interpretation: { total: 0, correct: 0 }, evaluation: { total: 0, correct: 0 } };
@@ -3095,9 +3309,15 @@ function getFilteredSubmissions() {
         ['low', 'medium', 'high'].forEach(diff => {
             const diffSubs = subs.filter(s => s.diff === diff);
             const questions = (art.quizzes && art.quizzes[diff]) ? art.quizzes[diff] : [];
+
+            // 🟢 計算該難度的平均用時 (排除紙本)
+            const validTimes = diffSubs.filter(s => s.timeSec !== undefined && s.timeSec !== null && !isNaN(s.timeSec)).map(s => Number(s.timeSec));
+            const avgTime = validTimes.length > 0 ? Math.round(validTimes.reduce((a,b)=>a+b, 0) / validTimes.length) : null;
+            const avgTimeStr = avgTime !== null ? formatTimeDisplay(avgTime) : '紙本/無紀錄';
+
             html += `<div style="margin-top: 15px; border:1px solid #e2e8f0; border-radius:8px; padding:14px; background:#fff;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><h5 style="margin:0;">${diff === 'low' ? '🟢 初階' : (diff === 'medium' ? '🟡 進階' : '🔴 高階')}</h5>
-                    <small>人數：${diffSubs.length} | 題數：${questions.length}</small></div>`;
+                    <small>人數：${diffSubs.length} | 題數：${questions.length}| 平均用時：<strong style="color:#0369a1;">${avgTimeStr}</strong></small></div>`;
             if (questions.length === 0) { html += `<p>無題目。</p>`; } else {
                 html += `<table class="data-table diag-table"><thead><tr><th>維度</th><th>題目</th><th>答對率</th><th>選項分佈</th></tr></thead><tbody>`;
                 questions.forEach((qObj, qIdx) => {
@@ -3123,19 +3343,22 @@ function getFilteredSubmissions() {
         
         // 📊 新增：計算該時段內的閱讀總數與各難度篇數
         let diffCounts = { low: 0, medium: 0, high: 0, manual_bonus: 0 };
+        let totalTimeSec = 0;
         subs.forEach(s => {
             if (diffCounts[s.diff] !== undefined) diffCounts[s.diff]++;
+            if (s.timeSec !== undefined && s.timeSec !== null && !isNaN(s.timeSec)) {
+                totalTimeSec += Number(s.timeSec);
+            }
         });
         const totalRead = diffCounts.low + diffCounts.medium + diffCounts.high;
 
         // 渲染頂部狀態卡片 (增加難度分佈顯示)
         let html = `
             <div class="stat-grid">
-                <div class="stat-card"><i class="fa-solid fa-medal" style="color: #a855f7; width: 20px;"></i> 學年總積點: <strong>${st.totalPoints}</strong></div>
-                <div class="stat-card"><i class="fa-solid fa-coins" style="color: #eab308; width: 20px;"></i> 現可用積分: <strong>${st.currentPoints}</strong></div>
-                <div class="stat-card"><i class="fa-solid fa-chart-simple" style="color: #3b82f6; width: 20px;"></i> 於所選時段完成: <strong>${totalRead}</strong> 篇</div>
-                <div class="stat-card" style="grid-column: span 2; background: #fffbeb; border-color: #fde68a;">
-                    <strong style="color: #92400e;"><i class="fa-solid fa-bullseye" style="color: #ec4899; width: 20px;"></i> 難度分佈 (所選時段)：</strong> 
+                <div class="stat-card"><i class="fa-solid fa-chart-simple" style="color: #3b82f6; width: 20px;"></i> 期間完成: <strong>${totalRead}</strong> 篇</div>
+                <div class="stat-card"><i class="fa-solid fa-clock" style="color: #f97316; width: 20px;"></i> 期間總用時: <strong>${formatTimeDisplay(totalTimeSec)}</strong></div>
+                <div class="stat-card" style="grid-column: span 3; background: #fffbeb; border-color: #fde68a;">
+                    <strong style="color: #92400e;"><i class="fa-solid fa-bullseye" style="color: #ec4899; width: 20px;"></i> 難度分佈：</strong> 
                     初階: <strong>${diffCounts.low}</strong> 篇 | 
                     進階: <strong>${diffCounts.medium}</strong> 篇 | 
                     高階: <strong>${diffCounts.high}</strong> 篇
@@ -3161,11 +3384,13 @@ function getFilteredSubmissions() {
                 <tr>
                     <!-- 調整 width 的百分比即可控制欄位寬度 -->
                     <th style="width: 36%;">篇章名稱 (難度)</th>
-                    <th style="text-align:center; width: 12%;">提取訊息</th>
-                    <th style="text-align:center; width: 12%;">直接推論</th>
-                    <th style="text-align:center; width: 12%;">統整解釋</th>
-                    <th style="text-align:center; width: 12%;">評價反思</th>
-                    <th style="text-align:center; width: 15%;">完成時間</th>
+                    <th style="text-align:center; width: 9%;">閱讀用時</th>
+                    <th style="text-align:center; width: 9%;">提取訊息</th>
+                    <th style="text-align:center; width: 9%;">直接推論</th>
+                    <th style="text-align:center; width: 9%;">統整解釋</th>
+                    <th style="text-align:center; width: 9%;">評價反思</th>
+                    <th style="text-align:center; width: 10%;">完成時間</th>
+                    <th style="text-align:center; width: 9%;">操作</th> <!-- 🟢 新增操作欄位 -->
                 </tr>
             </thead>
             <tbody>`;
@@ -3200,12 +3425,16 @@ function getFilteredSubmissions() {
                 };
 
                 html += `<tr>
-                    <td><strong style="color:#1e40af;">${title}</strong> <small style="color:#64748b;">${diffLabel}</small></td>
+                    <td><strong style="text-align:left; color:#1e40af;">${title}</strong> <small style="color:#64748b;">${diffLabel}</small></td>
+                    <td style="text-align:center; font-size:0.9em; color:#0f766e;">${formatTimeDisplay(s.timeSec)}</td>
                     <td style="text-align:center;">${getRate('retrieval')}</td>
                     <td style="text-align:center;">${getRate('inference')}</td>
                     <td style="text-align:center;">${getRate('interpretation')}</td>
                     <td style="text-align:center;">${getRate('evaluation')}</td>
-                    <td style="text-align:center; color:#64748b; font-size:0.9em;">${s.submittedAt}</td>
+                    <td style="text-align:center; color:#64748b; font-size:0.9em;">${s.submittedAt ? s.submittedAt.substring(0, 10) : ''}</td>
+                    <td style="text-align:center;">
+                        <button type="button" class="btn btn-sm" style="background:#ef4444; color:white; padding:4px 8px; font-size:0.85em;" onclick="deleteSubmission('${s.id}', '${s.username}', ${s.score || 0})">🗑️ 刪除</button>
+                    </td>
                 </tr>`;
             });
         }
@@ -3214,6 +3443,59 @@ function getFilteredSubmissions() {
         container.innerHTML = html;
         // ▲▲▲ 改為表格排版 ▲▲▲
     }
+
+// ==========================================
+// 🗑️ 刪除單筆作答紀錄與退回分數
+// ==========================================
+async function deleteSubmission(subId, username, score) {
+    if (!subId || subId === 'undefined') {
+        alert("❌ 無法刪除：這筆紀錄缺少唯一識別碼 (可能為舊版快取)，請重新載入網頁後再試。");
+        return;
+    }
+
+    if (!confirm(`⚠️ 警告：確定要永久刪除這筆作答紀錄嗎？\n\n系統將會自動從學生 [${username}] 的帳戶中扣除當初獲得的 ${score} 分！\n(此操作無法復原)`)) {
+        return;
+    }
+
+    try {
+        const batch = db.batch();
+        
+        // 1. 刪除該筆紀錄 (Firestore)
+        const subRef = db.collection("submissions").doc(subId);
+        batch.delete(subRef);
+
+        // 2. 扣除學生分數 (防止扣成負數的處理留在快取端)
+        const userRef = db.collection("users").doc(username);
+        batch.update(userRef, {
+            currentPoints: firebase.firestore.FieldValue.increment(-score),
+            totalPoints: firebase.firestore.FieldValue.increment(-score)
+        });
+
+        await batch.commit();
+
+        // 3. 更新本地快取
+        // 移除該筆紀錄
+        studentSubmissionsCache = studentSubmissionsCache.filter(s => s.id !== subId);
+        
+        // 更新快取中的學生分數 (確保不會變負數)
+        const st = allUsersCache.find(u => u.username === username);
+        if (st) {
+            st.currentPoints = Math.max(0, (st.currentPoints || 0) - score);
+            st.totalPoints = Math.max(0, (st.totalPoints || 0) - score);
+        }
+
+        alert(`✅ 成功刪除紀錄！已自動扣除 ${score} 分。`);
+        
+        // 4. 重新渲染當前畫面
+        renderStudentAnalytics(username);
+        
+    } catch (error) {
+        console.error("刪除紀錄失敗:", error);
+        alert(`❌ 刪除失敗，請檢查網路連線：${error.message}`);
+    }
+}
+
+
 
 
     // 📝 升級 3：多班級分析新增頂部「PIRLS 四大維度總平均」
@@ -3257,7 +3539,19 @@ function getFilteredSubmissions() {
             const stats = calculateStudentPirlsStats(st.username);
             const rate = (lvl) => stats[lvl].total > 0 ? Math.round((stats[lvl].correct/stats[lvl].total)*100)+'%' : '-';
             const seatStr = st.seat ? `(${st.seat}號)` : '';
-            html += `<tr><td><strong>${st.class || ''}</strong> ${seatStr}</td><td>${st.name}</td><td>${rate('retrieval')}</td><td>${rate('inference')}</td><td>${rate('interpretation')}</td><td>${rate('evaluation')}</td></tr>`;
+
+        // 🟢 計算該學生在所選時段內的總閱讀時長
+            let stTotalTime = 0;
+            const stSubs = getFilteredSubmissions().filter(s => s.username === st.username);
+            stSubs.forEach(s => {
+                if (s.timeSec !== undefined && s.timeSec !== null && !isNaN(s.timeSec)) {
+                    stTotalTime += Number(s.timeSec);
+                }
+            });
+
+            html += `<tr><td><strong>${st.class || ''}</strong> ${seatStr}</td><td>${st.name}</td>
+<td style="color:#0f766e; font-weight:bold;">${formatTimeDisplay(stTotalTime)}</td>
+<td>${rate('retrieval')}</td><td>${rate('inference')}</td><td>${rate('interpretation')}</td><td>${rate('evaluation')}</td></tr>`;
         }); 
         html += `</tbody></table>`; container.innerHTML = html;
     }
@@ -3265,7 +3559,8 @@ function getFilteredSubmissions() {
     // 📝 升級 4：同步強化 CSV 匯出功能 (包含班級過濾、四大 PIRLS 維度總覽與每題對錯)
     function exportExcelByCurrentScope() {
         let csv = "\uFEFF"; // 避免 Excel 開啟時變成亂碼的 BOM 標記
-        let fileName = `Reading_Platform_${currentAnalyticsSubView}_${new Date().toISOString().slice(0,10)}`;
+        let fileName = `Reading_Platform_${currentAnalyticsSubView}_${new Date().toLocaleString('sv-SE')
+.slice(0,10)}`;
 
         // 1. 篇章與思維層次診斷 (支援班級篩選)
         if (currentAnalyticsSubView === 'by-article') {
@@ -3319,7 +3614,7 @@ function getFilteredSubmissions() {
                 // 每個難度建立獨立的小標題與表頭
                 csv += `\n--- ${diffNames[diff]}挑戰 學生作答明細 ---\n`;
                 
-                let headerCols = `班級,座號,姓名,帳號,獲得積分,完成日期,[整體]提取訊息,[整體]直接推論,[整體]統整解釋,[整體]評價反思`;
+                let headerCols = `班級,座號,姓名,帳號,閱讀用時(秒),獲得積分,完成日期,[整體]提取訊息,[整體]直接推論,[整體]統整解釋,[整體]評價反思`;
                 
                 const qList = art.quizzes[diff] || [];
                 // 動態將該難度的實際題目加入表頭
@@ -3357,7 +3652,7 @@ function getFilteredSubmissions() {
                     });
 
                     // 輸出該學生的資料列
-                    csv += `"${st.class || s.class}","${st.seat || s.seat}","${st.name || s.name}","${s.username}","${s.score}","${s.submittedAt}","${rRate}","${iRate}","${pRate}","${eRate}",${qAnsStr.join(',')}\n`;
+                    csv += `"${st.class || s.class}","${st.seat || s.seat}","${st.name || s.name}","${s.username}","${s.timeSec !== undefined ? s.timeSec : '紙本'}","${s.score}","${s.submittedAt}","${rRate}","${iRate}","${pRate}","${eRate}",${qAnsStr.join(',')}\n`;
                 });
             });
 
@@ -3369,8 +3664,8 @@ function getFilteredSubmissions() {
 
             const pirlsStats = calculateStudentPirlsStats(uname);
             csv += `【個別學生 PIRLS 四大思維階梯與作答明細報告】\n`;
-            csv += `學號,姓名,班級,座號,學年總積點,現可用積分,帳號狀態\n`;
-            csv += `"${uname}","${st.name}","${st.class}","${st.seat}","${st.totalPoints}","${st.currentPoints}","${st.isLocked ? '已鎖定' : '正常'}"\n\n`;
+            csv += `學號,姓名,班級,座號,學年總積點,現可用積分,帳號狀態,期間總用時(秒)\n`;
+            csv += `"${uname}","${st.name}","${st.class}","${st.seat}","${st.totalPoints}","${st.currentPoints}","${st.isLocked ? '已鎖定' : '正常'}","${totalTimeSec}"\n\n`;
             
             csv += `PIRLS思維階梯總結,答對題數,總考查題數,掌握率百分比\n`;
             Object.keys(pirlsStats).forEach(lvl => {
@@ -3404,7 +3699,10 @@ function getFilteredSubmissions() {
                 const q4 = qStatusStrs[3] || '';
                 const q5 = qStatusStrs[4] || '';
 
-                csv += `"${art ? art.title : s.articleKey}","${diffName}","${s.timeSec}","${s.score}","${s.isPerfect ? '是' : '否'}","${s.submittedAt}","${q1}","${q2}","${q3}","${q4}","${q5}"\n`;
+// 🟢 新增判斷：如果有秒數就顯示，沒有的話就顯示「紙本作答」
+                const timeDisplay = (s.timeSec !== undefined && s.timeSec !== null) ? s.timeSec : '紙本作答';
+
+                csv += `"${art ? art.title : s.articleKey}","${diffName}","${timeDisplay}","${s.score}","${s.isPerfect ? '是' : '否'}","${s.submittedAt}","${q1}","${q2}","${q3}","${q4}","${q5}"\n`;
             });
 
         // 3. 全班參與及能力分佈 (新增班級/全校大平均)
@@ -3432,7 +3730,7 @@ function getFilteredSubmissions() {
             csv += `"${targetClasses.join('、')}","${avgR}%","${avgI}%","${avgP}%","${avgE}%"\n\n`;
 
             csv += `【學生個別表現明細】\n`;
-            csv += `班級,座號,姓名,帳號,狀態,學年總積點,現可用積分,提取訊息掌握率,直接推論掌握率,統整解釋掌握率,評價反思掌握率\n`;
+            csv += `班級,座號,姓名,帳號,狀態,總閱讀用時(秒),學年總積點,現可用積分,提取訊息掌握率,直接推論掌握率,統整解釋掌握率,評價反思掌握率\n`;
             list.forEach(st => {
                 const stats = calculateStudentPirlsStats(st.username);
                 const rRate = stats.retrieval.total > 0 ? `${Math.round((stats.retrieval.correct/stats.retrieval.total)*100)}%` : '0%';
@@ -3440,7 +3738,17 @@ function getFilteredSubmissions() {
                 const pRate = stats.interpretation.total > 0 ? `${Math.round((stats.interpretation.correct/stats.interpretation.total)*100)}%` : '0%';
                 const eRate = stats.evaluation.total > 0 ? `${Math.round((stats.evaluation.correct/stats.evaluation.total)*100)}%` : '0%';
                 const statusStr = st.isLocked ? '已鎖定' : '正常';
-                csv += `"${st.class}","${st.seat}","${st.name}","${st.username}","${statusStr}","${st.totalPoints}","${st.currentPoints}","${rRate}","${iRate}","${pRate}","${eRate}"\n`;
+
+            // 🟢 計算該學生在所選時段內的總閱讀時長
+            let stTotalTime = 0;
+            const stSubs = getFilteredSubmissions().filter(s => s.username === st.username);
+            stSubs.forEach(s => {
+                if (s.timeSec !== undefined && s.timeSec !== null && !isNaN(s.timeSec)) {
+                    stTotalTime += Number(s.timeSec);
+                }
+            });
+
+                csv += `"${st.class}","${st.seat}","${st.name}","${st.username}","${statusStr}","${stTotalTime}","${st.totalPoints}","${st.currentPoints}","${rRate}","${iRate}","${pRate}","${eRate}"\n`;
             });
         }
 
@@ -3693,15 +4001,18 @@ function renderArticleManagementList() {
                             <option value="medium">進階</option>
                             <option value="high">高階</option>
                         </select>
-                        <button class="btn btn-primary btn-sm" onclick="printWorksheet('${key}', document.getElementById('print_diff_${key}').value)">
-                            <i class="fa-solid fa-print"></i> 印工作紙
+                        <button class="btn btn-primary btn-sm" onclick="printWorksheet('${key}', document.getElementById('print_diff_${key}').value, false)">
+                            <i class="fa-solid fa-print"></i> 空白卷
+                        </button>
+                        <button class="btn btn-sm" style="background-color: #f59e0b; color: white;" onclick="printWorksheet('${key}', document.getElementById('print_diff_${key}').value, true)">
+                            <i class="fa-solid fa-check-double"></i> 答案版
                         </button>
                         <!-- 🟢 新增：Word 匯出按鈕 -->
                         <button class="btn btn-sm" style="background-color: #2b579a; color: white;" onclick="exportWorksheetAsDocx('${key}', document.getElementById('print_diff_${key}').value)">
                             <i class="fa-solid fa-file-word"></i> Word
                         </button>
                     </div>
-                </td>      
+
             </tr>
         `;
     });
@@ -3819,10 +4130,12 @@ function startNewArticleCreation() {
     document.getElementById('new-art-time-med').value = '180';
     document.getElementById('new-art-time-high').value = '300';
     document.getElementById('new-art-link').value = '';
+    document.getElementById('new-art-call-number').value = '';
     document.getElementById('new-art-status').value = 'published';
     document.getElementById('new-art-lastmodified').value = getFormattedCurrentDate();
     document.getElementById('new-art-allow-retake').checked = false;
-    document.getElementById('publish-submit-btn').innerText = '🚀 確定儲存並發布篇章';
+    document.getElementById('publish-submit-btn').disabled = false;
+    document.getElementById('publish-submit-btn').innerHTML = '🚀 確定儲存並發布篇章';
     
     // ⚠️ 關鍵修復：畫出 12 個題目的空白格子，這樣才不會空空如也！
     renderQuizEditorFields({low:[], medium:[], high:[]}); 
@@ -3880,6 +4193,7 @@ function editArticle(key) {
     document.getElementById('new-art-time-med').value = art.times.medium || 180;
     document.getElementById('new-art-time-high').value = art.times.high || 300;
     document.getElementById('new-art-link').value = art.fullArticleLink || '';
+    document.getElementById('new-art-call-number').value = art.libraryCallNumber || '';
     document.getElementById('new-art-status').value = art.status || 'published';
     document.getElementById('new-art-lastmodified').value = art.lastModified || getFormattedCurrentDate();
     document.getElementById('new-art-allow-retake').checked = !!art.allowRetake;
@@ -3887,7 +4201,9 @@ function editArticle(key) {
     // ⚠️ 關鍵修復：載入舊文章的題目內容
     renderQuizEditorFields(art.quizzes);
     
-    document.getElementById('publish-submit-btn').innerText = '💾 儲存並更新篇章設定';
+    document.getElementById('publish-submit-btn').disabled = false;
+    document.getElementById('publish-submit-btn').innerHTML = '💾 儲存並更新篇章設定';
+
     document.getElementById('article-editor-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
     
     // ⚠️ 關鍵修復：延遲 0.1 秒自動觸發預覽，確保資料填入後才繪製畫面
@@ -3954,27 +4270,52 @@ async function handlePublishArticle(e) {
     const submitButton = document.getElementById('publish-submit-btn');
     submitButton.disabled = true;
     submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在寫入資料庫...';
-
+    
+    const isEditing = !!editingArticleKey; // ✨ 把它移到 try 的上面！
+    
     try {
         const title = document.getElementById('new-art-title').value.trim();
         if (!title) {
             throw new Error("請務必輸入篇章標題！");
         }
-
-        const isEditing = !!editingArticleKey;
+        
         // 如果是編輯，使用舊 key；如果是新增，則產生一個全新的 document ID
         const key = isEditing ? editingArticleKey : db.collection("articles").doc().id;
         
+        // ==========================================
+        // 🌟 核心防護與自動編碼機制：處理紙本代碼 (paperCode)
+        // ==========================================
+        let currentPaperCode = null;
+        if (isEditing && articlesCache[key] && articlesCache[key].paperCode) {
+            // 編輯模式：繼承保留原本的代碼，防止被洗掉
+            currentPaperCode = articlesCache[key].paperCode;
+        } else {
+            // 新增模式：尋找全系統目前最大的代碼，然後 +1
+            let maxCode = 1000;
+            Object.values(articlesCache).forEach(art => {
+                if (art.paperCode) {
+                    const codeNum = parseInt(art.paperCode, 10);
+                    if (!isNaN(codeNum) && codeNum > maxCode) {
+                        maxCode = codeNum;
+                    }
+                }
+            });
+            currentPaperCode = (maxCode + 1).toString(); // 自動賦予新號碼
+        }
+        // ==========================================
+
         // 1. 準備好要寫入資料庫的完整文章物件
         const articleData = {
             title: title,
+            paperCode: currentPaperCode, // 🌟 寫入永久紙本代碼
             category: document.getElementById('new-art-category').value.trim() || '通用閱讀',
             recommendedGrades: Array.from(document.querySelectorAll('.art-grade-chk:checked')).map(c => c.value),
             targetClasses: Array.from(document.querySelectorAll('.art-target-class-chk:checked')).map(c => c.value),
-            lastModified: getFormattedCurrentDate(),
+            lastModified: getFormattedCurrentDate(), // 記得確認這裡是否已替換為 getHKTime()
             status: document.getElementById('new-art-status').value,
             allowRetake: document.getElementById('new-art-allow-retake').checked,
             fullArticleLink: document.getElementById('new-art-link').value.trim(),
+            libraryCallNumber: document.getElementById('new-art-call-number').value.trim(), 
             content: {
                 low: document.getElementById('new-art-content-low').value.trim(),
                 medium: document.getElementById('new-art-content-med').value.trim(),
@@ -3989,63 +4330,64 @@ async function handlePublishArticle(e) {
         };
 
         // 2.【核心】執行 Firebase 資料庫寫入操作
-        // 使用 .set() 方法，它既可以建立新文件，也可以完全覆蓋舊文件，完美適用於此場景
         await db.collection("articles").doc(key).set(articleData);
-
+        
         // 3. 資料庫寫入成功後，同步更新本地快取
         articlesCache[key] = articleData;
         
-        alert(`✅ 資料庫操作成功！\n篇章【${title}】已永久儲存。`);
-
+        alert(`✅ 資料庫操作成功！\n篇章【${title}】已永久儲存。\n📝 專屬紙本代碼為：${currentPaperCode}`);
+        
         // 4. 執行所有後續的UI刷新和清理操作
         cancelArticleEdit();
         refreshCategoryUIElements();
         renderArticleManagementList();
         populateTeacherArticlePickers();
         
-        // 如果學生端也在使用，理論上也應更新（但通常教師編輯時學生不在線）
         if (typeof populateStudentArticleDropdown === 'function') {
             populateStudentArticleDropdown();
         }
-
     } catch (error) {
         console.error("儲存文章時發生 Firebase 錯誤：", error);
         alert(`❌ 儲存失敗：${error.message}`);
+    } finally {
         submitButton.disabled = false;
         submitButton.innerHTML = isEditing ? '💾 儲存並更新篇章設定' : '🚀 確定儲存並發布篇章';
     }
 }
 
-
-    function previewArticle(key) {
-        const art = articlesCache[key];
-        if (!art) return;
-        const panel = document.getElementById('teacher-article-preview-panel');
-        const gradesStr = Array.isArray(art.recommendedGrades) ? art.recommendedGrades.join('、') : (art.recommendedGrades || '全年級');
-        document.getElementById('preview-art-title').innerText = `📖 預覽：${art.title} [${art.category}] (建議年級：${gradesStr})`;
-        let html = `
-            <div style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin-bottom:12px; border:1px solid #e2e8f0;">
-                ⭐ <strong>推薦優先班級：</strong> ${(art.targetClasses && art.targetClasses.length > 0) ? art.targetClasses.join(', ') : '無（依年級推薦）'} | 
-                🕒 <strong>最後修訂日期：</strong> ${art.lastModified || '-'}
+function previewArticle(key) {
+    const art = articlesCache[key];
+    if (!art) return;
+    const panel = document.getElementById('teacher-article-preview-panel');
+    const gradesStr = Array.isArray(art.recommendedGrades) ? art.recommendedGrades.join('、') : (art.recommendedGrades || '全年級');
+    
+    // 🌟 標題加上紙本代碼顯示
+    const codeDisplay = art.paperCode ? ` [代碼: ${art.paperCode}]` : '';
+    document.getElementById('preview-art-title').innerText = `📖 預覽：${art.title}${codeDisplay} [${art.category}] (建議年級：${gradesStr})`;
+    
+    let html = `
+        <div style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin-bottom:12px; border:1px solid #e2e8f0;">
+            ⭐ <strong>推薦優先班級：</strong> ${(art.targetClasses && art.targetClasses.length > 0) ? art.targetClasses.join(', ') : '無（依年級推薦）'} | 
+            🕒 <strong>最後修訂日期：</strong> ${art.lastModified || '-'}
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px;">
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px;">
+                <h5 style="margin:0 0 6px 0; color:#166534;">🟢 初階文本 (~150字)</h5>
+                <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.low || '無內容'}</p>
             </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px;">
-                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px;">
-                    <h5 style="margin:0 0 6px 0; color:#166534;">🟢 初階文本 (~150字)</h5>
-                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.low || '無內容'}</p>
-                </div>
-                <div style="background:#fefce8; border:1px solid #fef08a; padding:12px; border-radius:8px;">
-                    <h5 style="margin:0 0 6px 0; color:#854d0e;">🟡 進階文本 (~350字)</h5>
-                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.medium || '無內容'}</p>
-                </div>
-                <div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">
-                    <h5 style="margin:0 0 6px 0; color:#991b1b;">🔴 高階文本 (~600字)</h5>
-                    <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.high || '無內容'}</p>
-                </div>
+            <div style="background:#fefce8; border:1px solid #fef08a; padding:12px; border-radius:8px;">
+                <h5 style="margin:0 0 6px 0; color:#854d0e;">🟡 進階文本 (~350字)</h5>
+                <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.medium || '無內容'}</p>
             </div>
-        `;
-        document.getElementById('preview-art-body').innerHTML = html;
-        panel.style.display = 'flex';
-    }
+            <div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">
+                <h5 style="margin:0 0 6px 0; color:#991b1b;">🔴 高階文本 (~600字)</h5>
+                <p style="font-size:0.92em; line-height:1.7; white-space:pre-wrap;">${art.content.high || '無內容'}</p>
+            </div>
+        </div>
+    `;
+    document.getElementById('preview-art-body').innerHTML = html;
+    panel.style.display = 'flex';
+}
 
     function closeArticlePreview() {
         document.getElementById('teacher-article-preview-panel').style.display = 'none';
@@ -4199,12 +4541,49 @@ function renderStudentStore() {
 
     visibleRewards.forEach(item => {
         const stockInfo = calculateRewardStock(item.id);
+        
+        let timeStatus = 'available'; // available, not_started, expired
+        let timeMsg = '';
+        const now = new Date();
+        
+        if (item.startDate && new Date(item.startDate) > now) {
+            // 狀態 1：未開放
+            timeStatus = 'not_started';
+            const formattedStart = item.startDate.replace('T', ' ');
+            if (item.endDate) {
+                const formattedEnd = item.endDate.replace('T', ' ');
+                timeMsg = `<div class="stock-tag-warning" style="background:#e0e7ff; color:#1e40af; border-color:#bfdbfe;">🕒 未開放 (兌換期為 ${formattedStart} 至 ${formattedEnd})</div>`;
+            } else {
+                timeMsg = `<div class="stock-tag-warning" style="background:#e0e7ff; color:#1e40af; border-color:#bfdbfe;">🕒 未開放 (由 ${formattedStart} 起開始兌換)</div>`;
+            }
+        } else if (item.endDate && new Date(item.endDate) < now) {
+            // 狀態 2：已過期
+            timeStatus = 'expired';
+            timeMsg = `<div class="stock-tag-warning" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">⛔ 已過期</div>`;
+        } else if (item.endDate) {
+            // 狀態 3：新增功能！已開放，且有設定結束日期 (加入限時提示)
+            const formattedEnd = item.endDate.replace('T', ' ');
+            // 這裡使用了柔和的黃色背景，提示學生把握時間
+            timeMsg = `<div class="stock-tag-warning" style="background:#fef9c3; color:#854d0e; border-color:#fef08a;">⏳ 兌換進行中 (至 ${formattedEnd} 結束)</div>`;
+        }
+
+        
+        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width:100%; height:140px; object-fit:cover; border-radius:8px; margin-bottom:10px;">` : '';
+        const isBtnDisabled = stockInfo.available <= 0 || timeStatus !== 'available';
+        
+        let btnText = '申請兌換';
+        if (stockInfo.available <= 0) btnText = '已換罄';
+        if (timeStatus === 'not_started') btnText = '未開放';
+        if (timeStatus === 'expired') btnText = '兌換結束';
+        
         grid.innerHTML += `
-            <div class="store-item">
-                ${stockInfo.available <= 5 ? `<div class="stock-tag-warning">⚡ 僅剩 ${stockInfo.available} 件！</div>` : ''}
+            <div class="store-item" ${timeStatus === 'available' ? '' : 'style="opacity:0.75; filter: grayscale(50%);"'}>
+                ${imgHtml}
+                ${stockInfo.available <= 5 && stockInfo.available > 0 && timeStatus === 'available' ? `<div class="stock-tag-warning">⚡ 僅剩 ${stockInfo.available} 件！</div>` : ''}
+                ${timeMsg}
                 <h4 style="margin: 0 0 6px 0;">${item.name}</h4>
                 <p style="color:#64748b; font-size: 0.9em;">所需現積分：<strong style="color:var(--warning);">${item.cost}</strong> 分</p>
-                <button type="button" class="btn btn-sm btn-warning" style="width:100%;" onclick="redeemReward('${item.id}', '${item.name}', ${item.cost})" ${stockInfo.available <= 0 ? 'disabled' : ''}>${stockInfo.available > 0 ? '申請兌換' : '已換罄'}</button>
+                <button type="button" class="btn btn-sm btn-warning" style="width:100%;" onclick="redeemReward('${item.id}', '${item.name}', ${item.cost})" ${isBtnDisabled ? 'disabled' : ''}>${btnText}</button>
             </div>
         `;
     });
@@ -4227,6 +4606,8 @@ async function redeemReward(rewardId, name, cost) {
             time: getFormattedCurrentDate(),
             student: `${currentUser.username} ${currentUser.name}`,
             username: currentUser.username,
+            class: currentUser.class || '',  // 🌟 新增這行：把學生的班別一起存起來
+            seat: currentUser.seat || '',    // (選用) 把座號也存起來會更方便
             item: name,
             costNum: cost,
             status: 'pending'
@@ -4265,26 +4646,49 @@ async function redeemReward(rewardId, name, cost) {
 
 
 
-    function renderStudentRedemptionHistory() {
-        const tbody = document.getElementById('student-redemption-history-tbody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        const myLogs = redemptionsCache.filter(r => r.username === currentUser.username);
-        if (myLogs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">尚無兌換申請紀錄</td></tr>`;
-            return;
-        }
-        myLogs.forEach(log => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${log.time}</td>
-                    <td><strong>${log.item}</strong></td>
-                    <td>-${log.costNum} 點</td>
-                    <td><span class="status-tag ${log.status === 'completed' ? 'tag-completed' : 'tag-pending'}">${log.status === 'completed' ? '已領取' : '待領取'}</span></td>
-                </tr>
-            `;
-        });
+function renderStudentRedemptionHistory() {
+    const tbody = document.getElementById('student-redemption-history-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    const myLogs = redemptionsCache
+    .filter(r => r.username === currentUser.username)
+    .sort((a, b) => (b.time || '').localeCompare(a.time || '')); // 依照 time 欄位，由最新到最舊排序
+
+
+    if (myLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">尚無兌換申請紀錄</td></tr>`;
+        return;
     }
+
+    myLogs.forEach(log => {
+        // 判斷狀態標籤
+        let statusHtml = '';
+        if (log.status === 'completed') {
+            statusHtml = `<span class="status-tag" style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:4px; font-size:0.85em;">✅ 已領取</span>`;
+        } else if (log.status === 'cancelled') {
+            // 新增：已取消並退分的標籤
+            statusHtml = `<span class="status-tag" style="background:#fee2e2; color:#991b1b; padding:4px 8px; border-radius:4px; font-size:0.85em;">❌ 已取消 (退分)</span>`;
+        } else {
+            statusHtml = `<span class="status-tag" style="background:#fef3c7; color:#92400e; padding:4px 8px; border-radius:4px; font-size:0.85em;">⏳ 待領取</span>`;
+        }
+
+        // 判斷分數顯示 (如果是取消，畫掉扣分並顯示綠色的加回分數)
+        let costHtml = `-${log.costNum} 點`;
+        if (log.status === 'cancelled') {
+            costHtml = `<del style="color:#94a3b8;">-${log.costNum}</del> <strong style="color:#16a34a;">+${log.costNum} 點</strong>`;
+        }
+
+        tbody.innerHTML += `
+            <tr ${log.status === 'cancelled' ? 'style="opacity: 0.7;"' : ''}>
+                <td>${log.time}</td>
+                <td><strong>${log.item}</strong></td>
+                <td>${costHtml}</td>
+                <td>${statusHtml}</td>
+            </tr>
+        `;
+    });
+}
+
 
 function switchTeacherTab(tab, element) {
     localStorage.setItem('savedTeacherTab', tab);
@@ -4379,8 +4783,24 @@ function renderTeacherRewardsList() {
     // 使用 for...of 迴圈，確保穩定性
     for (const item of rewardsCache) {
         // 計算剩餘庫存
-        const redeemedCount = redemptionsCache.filter(r => r.itemId === item.id).length;
-        const remainingStock = (item.initialStock || 0) - redeemedCount;
+        // 計算剩餘庫存 (修正欄位名稱為 rewardId，並且不計算已被取消的兌換)
+        // 1. 找出這項獎品所有「未取消」的兌換紀錄 (同時相容舊版 itemId 與新版 rewardId)
+        const validRedemptions = redemptionsCache.filter(r => 
+            (String(r.rewardId) === String(item.id) || String(r.itemId) === String(item.id)) && 
+            r.status !== 'cancelled'
+        );
+
+        // 2. 分別計算「待領取」與「已領取」的數量
+        const pendingCount = validRedemptions.filter(r => r.status === 'pending').length;
+        const completedCount = validRedemptions.filter(r => r.status === 'completed').length;
+        
+        // 3. 取得總上架數字
+        const initialStock = parseInt(item.initialStock) || 0;
+
+        // 4. 精準計算可兌換餘額：總上架 - 待領取 - 已領取 = 可兌換
+        const remainingStock = initialStock - pendingCount - completedCount;
+
+
         
         // 根據狀態顯示不同樣式
         const statusText = item.status === 'published' ? '已上架' : '已下架';
@@ -4389,12 +4809,12 @@ function renderTeacherRewardsList() {
         // 拼接每一行的 HTML
         html += `
             <tr>
-                <td><input type="checkbox" class="reward-checkbox" data-id="${item.id}"></td>
                 <td>${item.name || '未命名'}</td>
                 <td>${item.cost || 0}</td>
-                <td>${item.initialStock || 0}</td>
-                <td>${redeemedCount}</td>
-                <td>${remainingStock}</td>
+		<td style="color: #3b82f6;">${initialStock}</td>       <!-- 總上架 -->
+                <td style="color: #eab308;">${pendingCount}</td>       <!-- 待領取 -->
+                <td style="color: #22c55e;">${completedCount}</td>     <!-- 已領取 -->
+                <td style="font-weight: bold; color: ${remainingStock <= 5 ? '#ef4444' : '#000'};">${remainingStock}</td> <!-- 剩餘 -->
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 <td>
                     <button class="btn-secondary btn-sm" onclick="editReward('${item.id}')">✏️ 編輯</button>
@@ -4455,6 +4875,9 @@ async function handleSaveReward(e) {
     try {
         const rewardData = {
             name: document.getElementById('reward-name-input').value.trim(),
+            imageUrl: document.getElementById('reward-image-input').value.trim(),
+            startDate: document.getElementById('reward-start-input').value,
+            endDate: document.getElementById('reward-end-input').value,
             cost: parseInt(document.getElementById('reward-cost-input').value) || 30,
             initialStock: parseInt(document.getElementById('reward-stock-input').value) || 30,
             status: document.getElementById('reward-status-input').value
@@ -4509,6 +4932,9 @@ async function handleSaveReward(e) {
         editingRewardId = id;
         document.getElementById('reward-form-title').innerText = `✏️ 編輯獎品：${item.name}`;
         document.getElementById('reward-name-input').value = item.name;
+        document.getElementById('reward-image-input').value = item.imageUrl || '';
+        document.getElementById('reward-start-input').value = item.startDate || '';
+        document.getElementById('reward-end-input').value = item.endDate || '';
         document.getElementById('reward-cost-input').value = item.cost;
         document.getElementById('reward-stock-input').value = item.initialStock;
         document.getElementById('reward-status-input').value = item.status;
@@ -4520,6 +4946,9 @@ async function handleSaveReward(e) {
         editingRewardId = null;
         document.getElementById('reward-form-title').innerText = '➕ 新增 / 編輯獎品庫存';
         document.getElementById('reward-name-input').value = '';
+        document.getElementById('reward-image-input').value = '';
+        document.getElementById('reward-start-input').value = '';
+        document.getElementById('reward-end-input').value = '';
         document.getElementById('reward-cost-input').value = '30';
         document.getElementById('reward-stock-input').value = '30';
         document.getElementById('reward-status-input').value = 'published';
@@ -4527,38 +4956,435 @@ async function handleSaveReward(e) {
         document.getElementById('cancel-reward-btn').style.display = 'none';
     }
 
+// --- 兌換審核列表專用狀態變數 ---
+let currentRedemptionPage = 1;
+const redemptionsPerPage = 10; 
+let currentRedemptionFilter = 'all'; 
+let currentStatusFilter = 'all';     
+let currentStudentFilter = '';       
+let currentStartDate = '';           // 新增：開始日期
+let currentEndDate = '';             // 新增：結束日期
+
+// 統一處理所有篩選器變更的函式
+function changeRedemptionFilters() {
+    const rewardSelect = document.getElementById('reward-filter');
+    const statusSelect = document.getElementById('status-filter');
+    const studentInput = document.getElementById('student-filter');
+    const startDateInput = document.getElementById('admin-start-date');
+    const endDateInput = document.getElementById('admin-end-date');
+    
+    if (rewardSelect) currentRedemptionFilter = rewardSelect.value;
+    if (statusSelect) currentStatusFilter = statusSelect.value;
+    if (studentInput) currentStudentFilter = studentInput.value.trim().toLowerCase(); 
+    if (startDateInput) currentStartDate = startDateInput.value;
+    if (endDateInput) currentEndDate = endDateInput.value;
+    
+// 輸出到主控台，確認按鈕確實有被點擊並抓到值
+    console.log(`🔍 執行篩選 -> 獎品:${currentRedemptionFilter}, 狀態:${currentStatusFilter}, 學生:${currentStudentFilter}, 時間:${currentStartDate} ~ ${currentEndDate}`);
+
+    currentRedemptionPage = 1; 
+    renderTeacherRewardsAdmin();
+}
+
+// 取得目前篩選後的資料
+function getFilteredRedemptions() {
+    let filteredLogs = (redemptionsCache || []).sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+
+    if (currentRedemptionFilter !== 'all') filteredLogs = filteredLogs.filter(r => r.item === currentRedemptionFilter);
+    if (currentStatusFilter !== 'all') filteredLogs = filteredLogs.filter(r => r.status === currentStatusFilter);
+    if (currentStudentFilter !== '') {
+        filteredLogs = filteredLogs.filter(r => (r.student || '').toLowerCase().includes(currentStudentFilter));
+    }
+    
+    // 【關鍵修改】：日期區間改為比對「核發/處理時間 (fulfillTime)」
+    if (currentStartDate || currentEndDate) {
+        filteredLogs = filteredLogs.filter(r => {
+
+           // 優先看核發時間 (fulfillTime)，沒有的話看更新時間 (updatedAt)，最舊看申請時間 (time)
+            let targetTime = r.fulfillTime || r.updatedAt || r.time || '';
+            // 把時間字串清理一下，只取前面 YYYY-MM-DD 的部分來比對 (避免格式干擾)
+            targetTime = targetTime.replace('T', ' ').substring(0, 10);
+
+            let isAfterStart = true;
+            let isBeforeEnd = true;
+            
+            if (currentStartDate) isAfterStart = targetTime >= currentStartDate;
+            if (currentEndDate) isBeforeEnd = targetTime <= currentEndDate; 
+            
+            return isAfterStart && isBeforeEnd;
+        });
+    }
+
+    return filteredLogs;
+}
+
 function renderTeacherRewardsAdmin() {
     const tbody = document.getElementById('reward-admin-tbody');
+    const paginationContainer = document.getElementById('redemption-pagination');
     if (!tbody) return;
+
+    if (typeof updateRewardFilterOptions === 'function') updateRewardFilterOptions();
+
+    // 取得過濾後的資料
+    const filteredLogs = getFilteredRedemptions();
+
+    const totalPages = Math.ceil(filteredLogs.length / redemptionsPerPage) || 1;
+    if (currentRedemptionPage > totalPages) currentRedemptionPage = totalPages;
+    const startIndex = (currentRedemptionPage - 1) * redemptionsPerPage;
+    const currentLogs = filteredLogs.slice(startIndex, startIndex + redemptionsPerPage);
+
     tbody.innerHTML = '';
+    const selectAllCheckbox = document.getElementById('select-all-redemptions');
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
 
-    // 根據申請時間倒序排序，最新的在最上面
-    const sortedRedemptions = (redemptionsCache || []).sort((a, b) => (b.time || '').localeCompare(a.time || ''));
-
-    if (sortedRedemptions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #64748b;">目前沒有任何學生的兌換申請。</td></tr>';
+    if (currentLogs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #64748b;">🔍 找不到符合目前篩選條件的申請紀錄。</td></tr>';
+        if (paginationContainer) paginationContainer.innerHTML = '';
         return;
     }
 
-    sortedRedemptions.forEach(item => {
-        // 【關鍵修正】在 onclick 事件中，用單引號 ' 將 item.id 包裹起來
-        const actionButton = item.status === 'pending'
-            ? `<button type="button" class="btn btn-sm btn-success" onclick="fulfillReward('${item.id}')">✔️ 核發</button>`
-            : '<span class="status-tag" style="background-color: #e5e7eb; color: #4b5563;">已處理</span>';
+    currentLogs.forEach(item => {
+        let actionButton = '';
+        let statusHtml = '';
+        let checkboxHtml = '';
+        const costValue = item.costNum || item.points || 0;
+
+   // 【新增】：過濾掉學號，只保留姓名
+        let displayName = item.student || '未知學生';
+        if (item.username && displayName.startsWith(item.username)) {
+            // 把開頭的學號(username)替換成空白，然後去掉前後多餘的空格
+            displayName = displayName.replace(item.username, '').trim();
+}
+
+        // 【新增】：提取核發或取消時間，並轉為淡色的 HTML 顯示
+        let processTimeText = '';
+        if (item.fulfillTime) {
+            processTimeText = item.fulfillTime.substring(0, 16); // 截取到分鐘，例如 2026-10-28 15:30
+        } else if (item.updatedAt) {
+            processTimeText = item.updatedAt.replace('T', ' ').substring(0, 16);
+        }
+        // 若有時間，加上一小行淺灰色的日期標籤
+        const timeHtml = processTimeText ? `<div style="font-size: 0.75em; color: #64748b; margin-top: 5px;">${processTimeText}</div>` : '';
+
+        // 【更新】：將時間 (timeHtml) 附加到「已領取」與「已取消」的狀態下方
+        if (item.status === 'pending') {
+            statusHtml = `<span class="status-tag tag-recommend">待領取</span>`;
+            actionButton = `
+                <button type="button" class="btn btn-sm btn-success" onclick="fulfillReward('${item.id}')">✔️ 核發</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="rejectReward('${item.id}')" style="margin-left: 5px;">❌ 拒絕</button>
+            `;
+            checkboxHtml = `<input type="checkbox" class="redemption-checkbox" value="${item.id}">`;
+        } else if (item.status === 'completed') {
+            // 在狀態標籤後面加上 timeHtml
+            statusHtml = `<span class="status-tag tag-published">已領取</span>${timeHtml}`;
+            actionButton = '<span class="status-tag" style="background-color: #e5e7eb; color: #4b5563;">已處理</span>';
+            checkboxHtml = `<input type="checkbox" disabled>`;
+        } else if (item.status === 'cancelled') {
+            // 在狀態標籤後面加上 timeHtml
+            statusHtml = `<span class="status-tag" style="background:#fee2e2; color:#991b1b;">已取消 (退分)</span>${timeHtml}`;
+            actionButton = '<span class="status-tag" style="background-color: #e5e7eb; color: #4b5563;">已取消</span>';
+            checkboxHtml = `<input type="checkbox" disabled>`;
+        }
+
+        let costHtml = `-${costValue}`;
+        if (item.status === 'cancelled') {
+            costHtml = `<del style="color:#94a3b8;">-${costValue}</del> <strong style="color:#16a34a;">+${costValue}</strong>`;
+        }
 
         tbody.innerHTML += `
-            <tr>
+            <tr ${item.status === 'cancelled' ? 'style="opacity: 0.7;"' : ''}>
+                <td style="text-align: center;">${checkboxHtml}</td>
                 <td>${item.time}</td>
-                <td>${item.student || '未知學生'}</td>
+		<td style="font-weight: bold; color: #475569;">${item.class || '-'}</td>
+		<td>${displayName}</td>
                 <td><strong>${item.item || '未知獎品'}</strong></td>
-                <td>-${item.costNum || item.points}</td>
-                <td><span class="status-tag ${item.status === 'completed' ? 'tag-published' : 'tag-recommend'}">${item.status === 'completed' ? '已領取' : '待領取'}</span></td>
+                <td>${costHtml}</td>
+                <td style="line-height: 1.2;">${statusHtml}</td> <!-- 稍微調小行距，看起來更緊湊 -->
                 <td>${actionButton}</td>
             </tr>
         `;
     });
+
+
+    if (typeof renderRedemptionPagination === 'function') renderRedemptionPagination(totalPages);
 }
 
+
+// ==========================================
+// 🚀 智能分組合併與匯出真正的 Excel (.xlsx) - 座號排序升級版
+// ==========================================
+function exportRedemptionsExcel() {
+    // 檢查是否有引入 SheetJS
+    if (typeof XLSX === 'undefined') {
+        alert("⚠️ 系統找不到 Excel 匯出套件，請確定 HTML 中有引入 SheetJS。");
+        return;
+    }
+
+    const targetLogs = getFilteredRedemptions();
+    
+    if (targetLogs.length === 0) {
+        alert("⚠️ 目前篩選條件下沒有資料可以匯出喔！");
+        return;
+    }
+
+    // 1. 智能分組邏輯：以「登入帳號 (username)」為獨一無二的單位合併，避免同名或同座號衝突
+    const groupedData = {};
+    const classesSet = new Set(); // 收集所有出現過的班別
+    
+    targetLogs.forEach(log => {
+        const uid = log.username || 'unknown_id';
+        const className = log.class || '未分班';
+        classesSet.add(className);
+
+        if (!groupedData[uid]) {
+            let displayName = log.student || '未知學生';
+            if (log.username && displayName.startsWith(log.username)) {
+                displayName = displayName.replace(log.username, '').trim();
+            }
+            groupedData[uid] = { 
+                username: log.username,
+                seat: log.seat || '',      // 🌟 抓取座號資料
+                name: displayName,
+                class: className,
+                items: {}, 
+                totalCost: 0 
+            };
+        }
+        
+        const itemName = log.item || '未知獎品';
+        if (!groupedData[uid].items[itemName]) groupedData[uid].items[itemName] = 0;
+        groupedData[uid].items[itemName]++;
+        groupedData[uid].totalCost += parseInt(log.costNum || log.points || 0);
+    });
+
+    // 2. 排序：先排班別 ➡️ 再按「座號數字」排序
+    const sortedUids = Object.keys(groupedData).sort((a, b) => {
+        const classA = groupedData[a].class;
+        const classB = groupedData[b].class;
+        
+        // 第一順位：班別 (例如 1A 排在 1B 前面)
+        if (classA !== classB) return classA.localeCompare(classB);
+        
+        // 第二順位：座號 (轉換為數字來比大小，避免 10 排在 2 前面)
+        const seatA = parseInt(groupedData[a].seat) || 0;
+        const seatB = parseInt(groupedData[b].seat) || 0;
+        if (seatA !== seatB) return seatA - seatB;
+        
+        // 第三順位：如果座號一樣 (或都沒填)，用帳號當底線
+        return a.localeCompare(b);
+    });
+
+    const startStr = currentStartDate || "無限制";
+    const endStr = currentEndDate || "無限制";
+    const reportTitleInfo = [
+        ["學生獎品派發清單"],
+        ["核發/處理時間範圍：", `${startStr} 至 ${endStr}`],
+        [] 
+    ];
+    // 🌟 將表頭的「學號」改為「座號」
+    const headerRow = ["班別", "座號", "學生姓名", "應派發獎品明細", "總扣除積分"];
+
+    // 建立 Excel 工作簿 (Workbook)
+    const wb = XLSX.utils.book_new();
+
+    // ==========================================
+    // 建立【總表】(Summary Sheet)
+    // ==========================================
+    const summaryData = [...reportTitleInfo, headerRow];
+    sortedUids.forEach(uid => {
+        const data = groupedData[uid];
+        const itemsList = Object.entries(data.items).map(([name, count]) => `${name} x${count}`).join("  /  ");
+        // 🌟 輸出時放入 data.seat
+        summaryData.push([data.class, data.seat || '-', data.name, itemsList, `-${data.totalCost}`]);
+    });
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, wsSummary, "總表");
+
+    // ==========================================
+    // 建立【各班級分頁】(Class Sheets)
+    // ==========================================
+    const sortedClasses = Array.from(classesSet).sort();
+
+    sortedClasses.forEach(className => {
+        const classSheetData = [...reportTitleInfo, headerRow];
+        
+        // 只篩選出該班級的學生
+        sortedUids.forEach(uid => {
+            const data = groupedData[uid];
+            if (data.class === className) {
+                const itemsList = Object.entries(data.items).map(([name, count]) => `${name} x${count}`).join("  /  ");
+                // 🌟 輸出時放入 data.seat
+                classSheetData.push([data.class, data.seat || '-', data.name, itemsList, `-${data.totalCost}`]);
+            }
+        });
+
+        const safeSheetName = className.replace(/[\\\/*?:\[\]]/g, "").substring(0, 30) || "未分班";
+        const wsClass = XLSX.utils.aoa_to_sheet(classSheetData);
+        XLSX.utils.book_append_sheet(wb, wsClass, safeSheetName);
+    });
+
+    // ==========================================
+    // 觸發下載真正的 .xlsx 檔案
+    // ==========================================
+    const today = new Date().toLocaleString('sv-SE').substring(0, 10);
+    XLSX.writeFile(wb, `獎品派發清單_${today}.xlsx`);
+}
+
+
+
+// 自動收集並產生下拉選單選項
+function updateRewardFilterOptions() {
+    const select = document.getElementById('reward-filter');
+    if (!select) return;
+    const currentValue = select.value;
+    
+    // 從快取中抓出所有獨特的獎品名稱
+    const uniqueItems = [...new Set(redemptionsCache.map(r => r.item).filter(Boolean))];
+    
+    let optionsHtml = '<option value="all">顯示全部</option>';
+    uniqueItems.forEach(itemName => {
+        optionsHtml += `<option value="${itemName}">${itemName}</option>`;
+    });
+    
+    select.innerHTML = optionsHtml;
+    select.value = currentValue || 'all'; // 保持原本選擇的選項
+}
+
+
+
+// 渲染分頁按鈕
+function renderRedemptionPagination(totalPages) {
+    const container = document.getElementById('redemption-pagination');
+    if (!container) return;
+    let html = '';
+    for (let i = 1; i <= totalPages; i++) {
+        const isCurrent = (i === currentRedemptionPage);
+        const btnClass = isCurrent ? 'btn-primary' : 'btn-secondary';
+        html += `<button class="btn btn-sm ${btnClass}" style="margin: 0 3px;" onclick="goToRedemptionPage(${i})">${i}</button>`;
+    }
+    container.innerHTML = html;
+}
+
+// 換頁功能
+function goToRedemptionPage(page) {
+    currentRedemptionPage = page;
+    renderTeacherRewardsAdmin();
+}
+
+// 全選 Checkbox
+function toggleAllRedemptions(source) {
+    const checkboxes = document.querySelectorAll('.redemption-checkbox');
+    checkboxes.forEach(cb => {
+        if (!cb.disabled) cb.checked = source.checked;
+    });
+}
+
+// ==========================================
+// 🚀 批量操作 API (Firebase)
+// ==========================================
+
+// 批量核發獎品
+async function batchFulfillRewards() {
+    const checkboxes = document.querySelectorAll('.redemption-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        alert("⚠️ 請先在列表中勾選要核發的待領取申請！");
+        return;
+    }
+    
+    if (!confirm(`確定要一次核發這 ${selectedIds.length} 筆獎品嗎？`)) return;
+
+    // 使用 Firebase Batch 進行高效批量更新
+    const batch = db.batch();
+    selectedIds.forEach(id => {
+        const ref = db.collection("redemptions").doc(id);
+    	const nowTime = new Date().toLocaleString('sv-SE').replace(' ', ' '); 
+    	const batch = db.batch();
+    
+    selectedIds.forEach(id => {
+        const ref = db.collection("redemptions").doc(id);
+        batch.update(ref, { 
+            status: 'completed',
+            fulfillTime: nowTime // 【新增】：記錄核發時間
+        });
+    });
+    });
+
+    try {
+        await batch.commit();
+        // 更新本地快取
+        selectedIds.forEach(id => {
+            const item = redemptionsCache.find(r => String(r.id) === String(id));
+        if (item) {
+                item.status = 'completed';
+                item.fulfillTime = nowTime; // 同步快取
+          }
+        });
+        
+        renderTeacherRewardsAdmin(); // 重新渲染表格與庫存
+        if (typeof renderTeacherRewardsList === 'function') renderTeacherRewardsList();
+        
+        alert(`✅ 成功批量核發 ${selectedIds.length} 筆獎品！`);
+    } catch (error) {
+        console.error("批量核發發生錯誤:", error);
+        alert(`❌ 批量核發失敗：${error.message}`);
+    }
+}
+
+// 批量拒絕並退分
+async function batchRejectRewards() {
+    const checkboxes = document.querySelectorAll('.redemption-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        alert("⚠️ 請先在列表中勾選要拒絕的申請！");
+        return;
+    }
+    
+    if (!confirm(`🚨 確定要批量拒絕這 ${selectedIds.length} 筆申請嗎？\n系統將會自動計算並將積分退還給每位對應的學生。`)) return;
+
+    document.body.style.cursor = 'wait'; // 游標轉為等待中
+    let successCount = 0;
+    let failCount = 0;
+
+    // 退分牽涉到不同學生，為了安全我們使用 Promise.all 平行執行
+    await Promise.all(selectedIds.map(async (id) => {
+        const itemInCache = redemptionsCache.find(r => String(r.id) === String(id));
+        if (!itemInCache || itemInCache.status !== 'pending') return;
+
+        const costValue = parseInt(itemInCache.costNum || itemInCache.points || 0);
+
+        try {
+            // 1. 更新申請狀態為 cancelled
+            await db.collection("redemptions").doc(id).update({
+                status: 'cancelled',
+                updatedAt: new Date().toLocaleString('sv-SE')
+            });
+
+            // 2. 將積分加回給對應學生 (注意欄位是 currentPoints)
+            if (itemInCache.username) {
+                const userRef = db.collection("users").doc(itemInCache.username);
+                await userRef.update({
+                    currentPoints: firebase.firestore.FieldValue.increment(costValue)
+                });
+            }
+            
+            // 3. 更新快取
+            itemInCache.status = 'cancelled';
+            successCount++;
+        } catch (err) {
+            console.error(`ID: ${id} 退分失敗:`, err);
+            failCount++;
+        }
+    }));
+
+    document.body.style.cursor = 'default';
+    renderTeacherRewardsAdmin();
+    if (typeof renderTeacherRewardsList === 'function') renderTeacherRewardsList();
+    
+    alert(`✅ 批量退分處理完成！\n成功：${successCount} 筆\n失敗：${failCount} 筆`);
+}
 
 
 // 核發獎勵 (【V11.0 最終防禦版】- 兼容處理所有新舊數據)
@@ -4585,13 +5411,17 @@ async function fulfillReward(id) {
         // 1. 取得該筆兌換紀錄在 Firebase 中的文件參照
         const redemptionRef = db.collection("redemptions").doc(safeId);
         
-        // 2.【核心】將該文件的 status 欄位更新為 'completed'
+        // 產生當下時間，格式類似 2026-10-28 15:30:00
+        const nowTime = new Date().toLocaleString('sv-SE').replace(' ', ' '); 
+        
         await redemptionRef.update({
-            status: 'completed'
+            status: 'completed',
+            fulfillTime: nowTime // 【新增】：記錄核發時間
         });
-
-        // 3. 資料庫寫入成功後，才更新本地快取中的狀態
+        
         itemInCache.status = 'completed';
+        itemInCache.fulfillTime = nowTime; // 同步快取
+
         
         // 4. 重新渲染兌換審核的表格，UI 會即時更新
         renderTeacherRewardsAdmin();
@@ -4605,6 +5435,67 @@ async function fulfillReward(id) {
     }
 }
 
+
+// 拒絕兌換並退還積分
+async function rejectReward(id) {
+    const button = event.target;
+    if(button) button.disabled = true; // 防連點
+
+    const safeId = String(id || '').trim();
+    if (!safeId) return;
+
+    // 1. 尋找快取中的紀錄
+    const itemInCache = redemptionsCache.find(r => String(r.id) === safeId);
+    if (!itemInCache) {
+        alert("❌ 找不到該筆兌換紀錄！請重新整理頁面。");
+        if(button) button.disabled = false;
+        return;
+    }
+
+    const costValue = parseInt(itemInCache.costNum || itemInCache.points || 0);
+
+    if (!confirm(`確定要拒絕這筆兌換嗎？\n系統將會自動退還 ${costValue} 分給學生 ${itemInCache.student}。`)) {
+        if(button) button.disabled = false;
+        return;
+    }
+
+    try {
+        // 2. 更新兌換紀錄的狀態為 cancelled
+        const redemptionRef = db.collection("redemptions").doc(safeId);
+        await redemptionRef.update({
+            status: 'cancelled',
+            updatedAt: new Date().toLocaleString('sv-SE')
+        });
+
+        // 3. 退還積分給學生 (使用 Firestore 安全的 Increment 功能)
+        // ⚠️ 【注意】如果您的學生資料庫集合名稱叫做 "students" 而非 "users"，請將下方 "users" 改為 "students"
+        if (itemInCache.username) {
+            const userRef = db.collection("users").doc(itemInCache.username);
+            await userRef.update({
+                currentPoints: firebase.firestore.FieldValue.increment(costValue)
+            });
+
+// 如果老師跟學生在同一個瀏覽器測試，同步更新本地快取的數字 (避免重整前畫面沒變)
+            if (typeof currentUser !== 'undefined' && currentUser.username === itemInCache.username) {
+                currentUser.currentPoints += costValue;
+                if (typeof updatePointsDisplay === 'function') updatePointsDisplay();
+            }
+        } else {
+            console.warn("兌換紀錄中缺少 username，無法執行自動退分");
+            alert("⚠️ 紀錄狀態已取消，但由於缺少學生帳號資訊，無法自動退分，請於後台手動為學生加分。");
+        }
+
+        // 4. 更新本地快取並重新渲染畫面
+        itemInCache.status = 'cancelled';
+        renderTeacherRewardsAdmin();
+        alert(`✅ 已成功取消兌換，並將 ${costValue} 分退還給 ${itemInCache.student}！`);
+
+    } catch (error) {
+        console.error("退分與取消失敗：", error);
+        alert(`❌ 抱歉，處理時發生錯誤：${error.message}`);
+        if(button) button.disabled = false;
+    }
+}
 
 
     /* ========================================================
@@ -4643,11 +5534,21 @@ async function fulfillReward(id) {
         }
 
         // 排序：依據班級和座號
-        list.sort((a,b) => {
-            const classA = String(a.class || '').toUpperCase().trim();
-            const classB = String(b.class || '').toUpperCase().trim();
-            return classA.localeCompare(classB) || String(a.seat || '').localeCompare(String(b.seat || ''));
-        });
+	list.sort((a,b) => {
+        const classA = String(a.class || '').toUpperCase().trim();
+        const classB = String(b.class || '').toUpperCase().trim();
+
+        // 第一順位：依班級文字排序
+        if (classA !== classB) {
+            return classA.localeCompare(classB);
+        }
+
+        // 第二順位：班級相同時，依座號數字排序 (解決 10 排在 2 前面的問題)
+        // 使用 parseInt 將文字轉為整數，若沒有座號則當作 0
+        const seatA = parseInt(a.seat, 10) || 0;
+        const seatB = parseInt(b.seat, 10) || 0;
+        return seatA - seatB;
+    });
 
         let html = '';
         if (list.length === 0) {
@@ -5196,21 +6097,54 @@ function handleExcelImport(event) {
     function renderStudentCheckboxList() {
         const container = document.getElementById('student-checkbox-container');
         if (!container) return;
-        const filterC = document.getElementById('bonus-filter-class').value;
+        
+        const filterRaw = document.getElementById('bonus-filter-class').value;
+        const filterC = filterRaw ? filterRaw.toUpperCase().trim() : 'ALL';
         container.innerHTML = '';
-        allUsersCache.filter(st => filterC === 'ALL' || st.class === filterC).forEach(st => {
-            container.innerHTML += `
-                <div style="padding: 6px 4px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="chk-st-${st.username}" value="${st.username}" class="bonus-st-chk" style="margin: 0;">
-                    <label for="chk-st-${st.username}" style="display: inline-block; margin: 0; font-weight: normal; cursor: pointer;">
-                        ${st.class} 班 ${st.seat} 號 - ${st.name} <code>(${st.username})</code>
-                    </label>
-                </div>
+
+        // 1. 先過濾出符合條件的學生
+	let list = allUsersCache.filter(st => {
+            if (filterC === 'ALL') return true;
+            const stClass = String(st.class || '').toUpperCase().trim();
+            return stClass === filterC;
+        });
+
+        // 2. 🌟 加入我們完美無瑕的「班別 + 數字座號」排序邏輯
+        list.sort((a, b) => {
+            const classA = String(a.class || '').toUpperCase().trim();
+            const classB = String(b.class || '').toUpperCase().trim();
+            
+            // 第一順位：依班級文字排序
+            if (classA !== classB) {
+                return classA.localeCompare(classB);
+            }
+            
+            // 第二順位：班級相同時，依座號「數字」排序
+            const seatA = parseInt(a.seat, 10) || 0;
+            const seatB = parseInt(b.seat, 10) || 0;
+            return seatA - seatB;
+        });
+
+// 3. 組合 HTML 字串 (改為 Grid 小卡片排版)
+        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">';
+        list.forEach(st => {
+            html += `
+                <label for="chk-st-${st.username}" style="display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; cursor: pointer; margin: 0; transition: all 0.2s;" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='#e2e8f0'">
+                    <input type="checkbox" id="chk-st-${st.username}" value="${st.username}" class="bonus-st-chk" style="margin: 0; transform: scale(1.2);">
+                    <div style="font-weight: normal; font-size: 0.9em; color: #334155; line-height: 1.3;">
+                        <strong>${st.class} ${st.seat}號</strong><br>
+                        ${st.name} <span style="color:#94a3b8; font-size:0.85em;">(${st.username})</span>
+                    </div>
+                </label>
             `;
         });
+        html += '</div>';
+
+        container.innerHTML = html;
     }
 
     function filterStudentCheckboxList(val) { renderStudentCheckboxList(); }
+    
     function toggleSelectAllStudents(val) { document.querySelectorAll('.bonus-st-chk').forEach(c => c.checked = val); }
 
 // 自選學生批量加分 (【V16.0 - 終極防禦版】)
@@ -5288,79 +6222,412 @@ async function handleMultiCheckBonus(e) {
 }
 
 
+// ==========================================
+// 🚀 紙本工作紙極速錄入中心 核心引擎
+// ==========================================
 
-// 按班級/全校批量加分 (【V16.0 - 終極防禦版】)
-async function handleBatchClassBonus(e) {
-    e.preventDefault();
-    const form = e.target.closest('form');
-    const button = form.querySelector('button[type="submit"]');
-    button.disabled = true;
-    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在寫入資料庫...';
-    
-    try {
-        const target = document.getElementById('bonus-batch-class-picker').value;
-        const pts = parseInt(document.getElementById('bonus-batch-points').value) || 0;
-        const reason = document.getElementById('bonus-batch-reason').value.trim();
+let paperUploadDataCache = []; // 暫存準備上傳的正確資料
 
-        if (!reason || pts <= 0) throw new Error("請輸入正數的點數與加分原因！");
+// 1. 班級轉代碼工具 (例如: 1A -> 11, 3B -> 32, 6C -> 63)
+function getClassCode(className) {
+    const match = String(className).match(/([1-6])([A-Z])/i);
+    if (match) {
+        const grade = match[1];
+        const charCode = match[2].toUpperCase().charCodeAt(0) - 64; // A=1, B=2, C=3
+        return `${grade}${charCode}`;
+    }
+    return null;
+}
 
-        const batch = db.batch();
-        const timeStr = getFormattedCurrentDate();
-        const newSubmissionRecords = [];
-        let affectedStudentCount = 0;
+// 2. 建立文章代碼對照表 (讀取資料庫中永久綁定的 paperCode)
+function getArticleCodeMap() {
+    const map = {};
+    Object.keys(articlesCache).forEach(key => {
+        const art = articlesCache[key];
+        // 只要這篇文章有永久代碼，就加入對照表
+        if (art.paperCode) {
+            map[art.paperCode.toString()] = { key: key, title: art.title };
+        }
+    });
+    return map;
+}
 
-        allUsersCache.forEach(st => {
-            if (st.isStaff) return;
-            if (target === 'ALL' || st.class === target) {
-                affectedStudentCount++;
-                if (st && st.id) {
-                    const userRef = db.collection("users").doc(st.id);
-                    batch.update(userRef, {
-                        totalPoints: firebase.firestore.FieldValue.increment(pts),
-                        currentPoints: firebase.firestore.FieldValue.increment(pts)
-                    });
+// 3. 下載專屬輸入模板 (CSV)
+function downloadPaperTemplate() {
+    let csv = "\uFEFF"; // BOM
+    csv += "--- 本檔案為系統專用上傳格式，請勿刪除此行 ---\n";
+    csv += "學生代碼(班+座),文章代碼,學生答案(1=A/2=B/3=C/4=D/0=空)\n";
+    csv += ",,\n"; // 留一行空白給老師開始填
 
-                    const submissionRef = db.collection("submissions").doc();
-                    const newRecord = { /* ... 內容與 V15.0 相同 ... */ 
-                        username: st.username, name: st.name, class: st.class, seat: st.seat,
-                        academicYear: getCurrentAcademicYear(),
-                        articleKey: `🌟 [集體激勵] ${reason}`,
-                        diff: 'manual_bonus', timeSec: 0, score: pts, isPerfect: false,
-                        submittedAt: timeStr, isActive: true, optionsPicked: []
-                    };
-                    batch.set(submissionRef, newRecord);
-                    newSubmissionRecords.push({ id: submissionRef.id, ...newRecord });
+    csv += "\n\n--- 以下為參考對照表 (上傳時系統會自動忽略) ---\n";
+    csv += "【班級代碼對照】\n";
+    csv += "1A=11, 1B=12, 1C=13, 1D=14\n";
+    csv += "2A=21, 2B=22, 2C=23, 2D=24\n";
+    csv += "3A=31, 3B=32, 3C=33, 3D=34\n";
+    csv += "4A=41, 4B=42, 4C=43, 4D=44\n";
+    csv += "5A=51, 5B=52, 5C=53, 5D=54\n";
+    csv += "6A=61, 6B=62, 6C=63, 6D=64\n\n";
+
+    csv += "【文章代碼對照】\n代碼,文章名稱\n";
+    const artMap = getArticleCodeMap();
+    Object.keys(artMap).forEach(code => {
+        csv += `${code},"${artMap[code].title}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "紙本工作紙_極速輸入模板.csv";
+    link.click();
+}
+
+// 4. 處理 CSV 上傳與預覽除錯
+function handlePaperCSVUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        
+        const artMap = getArticleCodeMap();
+        paperUploadDataCache = [];
+        let html = '';
+        let hasError = false;
+
+        // 從第 3 行開始讀取 (跳過標題)
+        for (let i = 2; i < lines.length; i++) {
+            const line = lines[i];
+            if (line.startsWith('---') || line.startsWith('【')) break; // 讀到參考表就停止
+            if (line === ',,') continue; // 跳過全空行
+
+            const cols = line.split(',');
+            if (cols.length < 3) continue;
+
+            const stCode = cols[0].trim();
+            const artCode = cols[1].trim();
+            const ansCode = cols[2].trim();
+            
+            if (!stCode && !artCode && !ansCode) continue;
+
+            let status = '✅ 正常';
+            let statusColor = '#16a34a';
+            let errMsg = '';
+            
+            // A. 驗證學生
+            let targetStudent = null;
+            if (stCode.length >= 3) {
+                const classPrefix = stCode.substring(0, 2); // 例如 32
+                const seatSuffix = parseInt(stCode.substring(2), 10); // 例如 04 -> 4
+                targetStudent = allUsersCache.find(st => getClassCode(st.class) === classPrefix && parseInt(st.seat, 10) === seatSuffix);
+            }
+            if (!targetStudent) { errMsg += '找不到該學生; '; }
+
+            // B. 驗證文章
+            const targetArt = artMap[artCode];
+            if (!targetArt) { errMsg += '文章代碼錯誤; '; }
+
+            // === 新增：驗證是否已達作答上限 (紙本+電子) ===
+            if (targetStudent && targetArt) {
+                const existingSubs = (studentSubmissionsCache || []).filter(sub => 
+                    sub.username === targetStudent.username && 
+                    sub.articleKey === targetArt.key
+                );
+                
+                const artData = articlesCache[targetArt.key];
+                
+                if (existingSubs.length >= 2) {
+                    errMsg += '該生已達作答上限(含重做已達2次); ';
+                } else if (existingSubs.length === 1) {
+                    // 如果已經有 1 筆紀錄，只有在老師有開放重做，且舊紀錄早於更新時間時才允許匯入
+                    const lastSubTime = existingSubs[0].submittedAt || '';
+                    const articleModTime = artData.lastModified || '2000-01-01 00:00';
+                    if (!artData.allowRetake) {
+                        errMsg += '該生已作答過，且目前未開放重做; ';
+                    } else if (lastSubTime >= articleModTime) {
+                        errMsg += '該生已完成重做，無法再次匯入; ';
+                    }
                 }
             }
-        });
+            // ===============================================
 
-        if (newSubmissionRecords.length === 0) throw new Error("找不到任何符合條件的學生可更新。");
-        
-        await batch.commit();
 
-        // 【V16.0 關鍵修正】在使用前，確保 studentSubmissionsCache 是一個陣列
-        if (!Array.isArray(studentSubmissionsCache)) {
-            studentSubmissionsCache = [];
+            // C. 驗證答案與判定難度
+            let diff = '';
+            if (ansCode.length === 3) diff = 'low';
+            else if (ansCode.length === 4) diff = 'medium';
+            else if (ansCode.length === 5) diff = 'high';
+            else { errMsg += '答案長度錯誤(必須是3,4或5碼); '; }
+
+            let score = 0;
+            let optionsPicked = [];
+            let ansDisplay = '';
+
+            // 如果文章和難度都正確，進行自動批改
+            if (targetArt && diff && !errMsg) {
+                const articleData = articlesCache[targetArt.key];
+                const quizzes = (articleData.quizzes && articleData.quizzes[diff]) ? articleData.quizzes[diff] : [];
+                
+                if (quizzes.length !== ansCode.length) {
+                    errMsg += `該文章沒有${diff === 'low'?'初':(diff==='medium'?'進':'高')}階題目; `;
+                } else {
+                    // 對答案
+                    for (let q = 0; q < ansCode.length; q++) {
+                        const ansChar = ansCode[q];
+                        let pickedIndex = null;
+                        
+                        if (ansChar === '1') { pickedIndex = 0; ansDisplay += 'A '; }
+                        else if (ansChar === '2') { pickedIndex = 1; ansDisplay += 'B '; }
+                        else if (ansChar === '3') { pickedIndex = 2; ansDisplay += 'C '; }
+                        else if (ansChar === '4') { pickedIndex = 3; ansDisplay += 'D '; }
+                        else if (ansChar === '0') { pickedIndex = null; ansDisplay += '- '; }
+                        else { errMsg += '答案包含無效數字; '; break; }
+
+                        optionsPicked.push(pickedIndex);
+                        // 答對加 10 分
+                        if (pickedIndex !== null && pickedIndex === quizzes[q].correct) {
+                            score += 10;
+                        }
+                    }
+                }
+            }
+
+            if (errMsg) {
+                status = '❌ 錯誤';
+                statusColor = '#dc2626';
+                hasError = true;
+            } else {
+                // 驗證成功，加入快取準備寫入
+                paperUploadDataCache.push({
+                    student: targetStudent,
+                    articleKey: targetArt.key,
+                    diff: diff,
+                    optionsPicked: optionsPicked,
+                    score: score
+                });
+            }
+
+            // 產生預覽表格
+            html += `<tr>
+                <td style="color: ${statusColor}; font-weight: bold;">${status}<br><small>${errMsg}</small></td>
+                <td>${targetStudent ? `<strong>${targetStudent.class}</strong> ${targetStudent.name}` : '未知學生'} <small style="color:#64748b;">(${stCode})</small></td>
+                <td>${targetArt ? targetArt.title : '未知'} <small>(${artCode})</small></td>
+                <td>${diff === 'low' ? '初階' : (diff === 'medium' ? '進階' : (diff === 'high' ? '高階' : '未知'))}</td>
+                <td>${ansDisplay || ansCode}</td>
+                <td><strong style="color: #2563eb;">+${score} 分</strong></td>
+            </tr>`;
         }
 
-        newSubmissionRecords.forEach(record => {
-            const st = allUsersCache.find(r => r.username === record.username);
-            if (st) {
-                st.totalPoints = (st.totalPoints || 0) + record.score;
-                st.currentPoints = (st.currentPoints || 0) + record.score;
-            }
-            studentSubmissionsCache.unshift(record);
+        document.getElementById('paper-preview-tbody').innerHTML = html || '<tr><td colspan="6" style="text-align:center;">無有效資料</td></tr>';
+        document.getElementById('paper-preview-section').style.display = 'block';
+        
+        const confirmBtn = document.getElementById('paper-confirm-btn');
+        if (hasError || paperUploadDataCache.length === 0) {
+            document.getElementById('paper-preview-title').innerHTML = '⚠️ 預覽資料有誤，請修正 CSV 後重新上傳';
+            document.getElementById('paper-preview-title').style.color = '#dc2626';
+            confirmBtn.style.display = 'none';
+        } else {
+            document.getElementById('paper-preview-title').innerHTML = `✅ 檢查通過！共 ${paperUploadDataCache.length} 筆資料準備寫入`;
+            document.getElementById('paper-preview-title').style.color = '#16a34a';
+            confirmBtn.style.display = 'inline-block';
+        }
+    };
+    reader.readAsText(file, 'UTF-8');
+    event.target.value = ''; // 清空 input 允許重複上傳
+}
+
+// 5. 確認寫入資料庫
+async function confirmPaperUpload() {
+    if (paperUploadDataCache.length === 0) return;
+    if (!confirm(`確定要為這 ${paperUploadDataCache.length} 筆紙本紀錄發放積分嗎？\n系統會自動寫入作答紀錄與 PIRLS 維度。`)) return;
+
+    document.body.style.cursor = 'wait';
+    const btn = document.getElementById('paper-confirm-btn');
+    btn.disabled = true;
+    btn.innerText = '寫入中...';
+
+    try {
+        const batch = db.batch();
+        const nowHK = new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' });
+        const formattedTime = new Date(nowHK).toLocaleString('sv-SE').replace(' ', ' ');
+
+        paperUploadDataCache.forEach(data => {
+            const st = data.student;
+            // A. 建立 submission 紀錄 (標記 source: 'paper')
+            const subRef = db.collection('submissions').doc();
+            batch.set(subRef, {
+                username: st.username,
+                name: st.name || '',      // 🟢 補上姓名，讓報表顯示更完整
+                class: st.class || '',
+                seat: st.seat || '',
+                articleKey: data.articleKey,
+                diff: data.diff,
+                score: data.score,
+                optionsPicked: data.optionsPicked,
+                submittedAt: formattedTime,
+                source: 'paper',
+                isActive: true,           // 🟢 最關鍵的一行！讓分析系統承認這筆成績
+                isPerfect: (data.score === (data.optionsPicked.length * 10)) // 🟢 判斷是否滿分
+            });
+
+            // B. 更新學生分數
+            const userRef = db.collection('users').doc(st.username);
+            batch.update(userRef, {
+                currentPoints: firebase.firestore.FieldValue.increment(data.score),
+                totalPoints: firebase.firestore.FieldValue.increment(data.score)
+            });
         });
 
-        alert(`✅ 寫入成功！已為 ${target === 'ALL' ? '全校' : target + '班'} 共 ${affectedStudentCount} 位學生每人增加 ${pts} 點積分！`);
-        renderRosterPreview();
+        await batch.commit();
+        
+        alert(`🎉 成功寫入 ${paperUploadDataCache.length} 筆紀錄並發放積分！`);
+        document.getElementById('paper-preview-section').style.display = 'none';
+        paperUploadDataCache = [];
+        
+        // 重新載入系統快取 (可選)
+        if (typeof loadAllData === 'function') loadAllData();
 
     } catch (error) {
-        console.error("批量加分時發生 Firebase 錯誤：", error);
-        alert(`❌ 操作失敗：${error.message}`);
+        console.error('寫入紙本紀錄失敗:', error);
+        alert(`❌ 寫入失敗: ${error.message}`);
     } finally {
-        button.disabled = false;
-        button.innerHTML = '✔️ 確認加分';
+        document.body.style.cursor = 'default';
+        btn.disabled = false;
+        btn.innerText = '✔️ 3. 確認無誤，寫入資料庫並派發積分';
+    }
+}
+
+// ==========================================
+// 🚀 單筆紙本工作紙手動錄入邏輯
+// ==========================================
+async function submitSinglePaper() {
+    const stCode = document.getElementById('single-paper-stcode').value.trim();
+    const artCode = document.getElementById('single-paper-artcode').value.trim();
+    const ansCode = document.getElementById('single-paper-ans').value.trim();
+
+    if (!stCode || !artCode || !ansCode) {
+        alert("⚠️ 請完整填寫「學生代碼」、「文章代碼」及「學生答案」！");
+        return;
+    }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 批改中...';
+
+    try {
+        const artMap = getArticleCodeMap();
+        
+        // A. 驗證學生
+        let targetStudent = null;
+        if (stCode.length >= 3) {
+            const classPrefix = stCode.substring(0, 2); 
+            const seatSuffix = parseInt(stCode.substring(2), 10);
+            targetStudent = allUsersCache.find(st => getClassCode(st.class) === classPrefix && parseInt(st.seat, 10) === seatSuffix);
+        }
+        if (!targetStudent) throw new Error("找不到該學生代碼，請確認班別座號。");
+
+        // B. 驗證文章與重做限制
+        const targetArt = artMap[artCode];
+        if (!targetArt) throw new Error("文章代碼錯誤，請查閱代碼對照表。");
+
+        const existingSubs = (studentSubmissionsCache || []).filter(sub => 
+            sub.username === targetStudent.username && sub.articleKey === targetArt.key
+        );
+        const artData = articlesCache[targetArt.key];
+        
+        if (existingSubs.length >= 2) {
+            throw new Error("該生已達作答上限 (含重做已達2次)！");
+        } else if (existingSubs.length === 1) {
+            const lastSubTime = existingSubs[0].submittedAt || '';
+            const articleModTime = artData.lastModified || '2000-01-01 00:00';
+            if (!artData.allowRetake) {
+                throw new Error("該生已作答過此篇，且目前未開放重做。");
+            } else if (lastSubTime >= articleModTime) {
+                throw new Error("該生已完成重做，無法再次錄入。");
+            }
+        }
+
+        // C. 驗證答案長度與給分
+        let diff = '';
+        if (ansCode.length === 3) diff = 'low';
+        else if (ansCode.length === 4) diff = 'medium';
+        else if (ansCode.length === 5) diff = 'high';
+        else throw new Error("答案長度錯誤 (必須是3, 4或5碼)！");
+
+        let score = 0;
+        let optionsPicked = [];
+        const quizzes = (artData.quizzes && artData.quizzes[diff]) ? artData.quizzes[diff] : [];
+        
+        if (quizzes.length !== ansCode.length) {
+            throw new Error(`該文章沒有相對應的 ${diff === 'low'?'初':(diff==='medium'?'進':'高')}階題目！`);
+        }
+
+        for (let q = 0; q < ansCode.length; q++) {
+            const ansChar = ansCode[q];
+            let pickedIndex = null;
+            if (ansChar === '1') pickedIndex = 0;
+            else if (ansChar === '2') pickedIndex = 1;
+            else if (ansChar === '3') pickedIndex = 2;
+            else if (ansChar === '4') pickedIndex = 3;
+            else if (ansChar === '0') pickedIndex = null;
+            else throw new Error("答案包含無效數字 (只能填寫 0~4)！");
+
+            optionsPicked.push(pickedIndex);
+            if (pickedIndex !== null && pickedIndex === quizzes[q].correct) {
+                score += 10;
+            }
+        }
+
+        // D. 寫入 Firebase 資料庫
+        const batch = db.batch();
+        const formattedTime = getFormattedCurrentDate();
+
+        const subRef = db.collection('submissions').doc();
+        const subData = {
+            username: targetStudent.username,
+            name: targetStudent.name || '',
+            class: targetStudent.class || '',
+            seat: targetStudent.seat || '',
+            articleKey: targetArt.key,
+            diff: diff,
+            score: score,
+            optionsPicked: optionsPicked,
+            submittedAt: formattedTime,
+            source: 'paper',
+            isActive: true,
+            isPerfect: (score === (optionsPicked.length * 10))
+        };
+        batch.set(subRef, subData);
+
+        const userRef = db.collection('users').doc(targetStudent.username);
+        batch.update(userRef, {
+            currentPoints: firebase.firestore.FieldValue.increment(score),
+            totalPoints: firebase.firestore.FieldValue.increment(score)
+        });
+
+        await batch.commit();
+
+        // E. 更新本地快取，確保畫面可以即時看到新數據
+        const stCache = allUsersCache.find(u => u.username === targetStudent.username);
+        if (stCache) {
+            stCache.totalPoints = (stCache.totalPoints || 0) + score;
+            stCache.currentPoints = (stCache.currentPoints || 0) + score;
+        }
+        studentSubmissionsCache.unshift({ id: subRef.id, ...subData });
+
+        alert(`✅ 成功錄入！\n\n學生：${targetStudent.class} ${targetStudent.name}\n文章：${artData.title}\n難度：${diff}\n自動批改得分：+${score} 分！`);
+
+        // 清空表單，方便錄入下一位
+        document.getElementById('single-paper-stcode').value = '';
+        document.getElementById('single-paper-artcode').value = '';
+        document.getElementById('single-paper-ans').value = '';
+
+    } catch (error) {
+        alert(`❌ 錄入失敗: ${error.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "🚀 立即自動批改並寫入";
     }
 }
 
@@ -5409,7 +6676,7 @@ async function handleBatchClassBonus(e) {
                 studentSubmissionsCache: typeof studentSubmissionsCache !== 'undefined' ? studentSubmissionsCache : [],
                 rewardsCache: typeof rewardsCache !== 'undefined' ? rewardsCache : [],
                 redemptionsCache: typeof redemptionsCache !== 'undefined' ? redemptionsCache : [],
-                exportTime: new Date().toISOString()
+                exportTime: new Date().toLocaleString('sv-SE')
             };
 
             const jsonString = JSON.stringify(fullDatabase, null, 2); 
@@ -5418,7 +6685,7 @@ async function handleBatchClassBonus(e) {
             
             const a = document.createElement('a');
             a.href = url;
-            const dateStr = new Date().toISOString().slice(0,10);
+            const dateStr = new Date().toLocaleString('sv-SE').slice(0,10);
             a.download = `ReadingPlatform_Database_Backup_${dateStr}.json`;
             
             // 確保元素在畫面中不可見，以相容各家瀏覽器的安全機制
@@ -5585,8 +6852,20 @@ function parseAndFillAI() {
     const jsonStr = document.getElementById('ai-json-input').value.trim();
     if (!jsonStr) { alert("請先貼上 AI 產生的 JSON 內容！"); return; }
     try {
-        const cleanJsonStr = jsonStr.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
-        const aiData = JSON.parse(cleanJsonStr);
+        const startIdx = jsonStr.indexOf('{');
+        const endIdx = jsonStr.lastIndexOf('}');
+
+        if (startIdx === -1 || endIdx === -1) {
+            throw new Error("找不到有效的 JSON 大括號 {}，請確認貼上的內容是否完整。");
+        }
+        // 擷取乾淨的 JSON 字串
+        let cleanJsonStr = jsonStr.substring(startIdx, endIdx + 1);
+
+        // ✨【關鍵修復：解決 AI 產生真實換行導致解析失敗的問題】
+        // 這段代碼會自動抓出 JSON 中所有的「字串」，並把裡面的真實換行替換為合法的 \\n
+        cleanJsonStr = cleanJsonStr.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, function(match) {
+            return match.replace(/\n/g, "\\n").replace(/\r/g, "");
+        });        const aiData = JSON.parse(cleanJsonStr);
 
         const finalTitle = aiData.articleTitle || aiData.topic || "AI 生成閱讀篇章";
         const titleInput = document.getElementById('new-art-title');
@@ -5678,7 +6957,7 @@ function parseAndFillAI() {
 
     } catch (e) {
         console.error("解析失敗:", e);
-        alert("❌ JSON 解析失敗！請確認貼上的文字是乾淨的 JSON 格式。");
+        alert("❌ 匯入過程發生錯誤！\n\n系統真實報錯原因：\n" + e.message + "\n\n(如果是 Cannot read properties of null，代表 AI 產生的題目數量超過了畫面上的格子數！)");
     }
 }
 
@@ -5761,10 +7040,13 @@ ${targetData.content.replace(/\\n/g, '\n')}
         
         // 📊 新增：統計該時段內的閱讀總數與難度分佈
         let diffCounts = { low: 0, medium: 0, high: 0, manual_bonus: 0 };
+        let totalTimeSec = 0;
         subs.forEach(s => {
             if (diffCounts[s.diff] !== undefined) diffCounts[s.diff]++;
-        });
-        const totalRead = diffCounts.low + diffCounts.medium + diffCounts.high;
+            if (s.timeSec !== undefined && s.timeSec !== null && !isNaN(s.timeSec)) {
+                totalTimeSec += Number(s.timeSec);
+            }
+        });        const totalRead = diffCounts.low + diffCounts.medium + diffCounts.high;
 
         // 渲染雷達 (上方總結區)
         let pirlsHtml = '';
@@ -5780,7 +7062,7 @@ ${targetData.content.replace(/\\n/g, '\n')}
         // 渲染挑戰歷程 (計算該篇文章的 四大維度 正確率)
         let historyHtml = '';
         if (subs.length === 0) {
-            historyHtml = '<tr><td colspan="6" style="text-align:center;">此時段內尚無閱讀測驗紀錄</td></tr>';
+            historyHtml = '<tr><td colspan="7" style="text-align:center;">此時段內尚無閱讀測驗紀錄</td></tr>';
         } else {
             subs.slice(0, 10).forEach(s => {
                 const art = articlesCache[s.articleKey];
@@ -5803,6 +7085,7 @@ ${targetData.content.replace(/\\n/g, '\n')}
                 historyHtml += `<tr>
                         <td style="text-align:center;">${s.submittedAt.slice(0, 10)}</td>
                         <td>${title} <small style="color:#666;">${diffLabel}</small></td>
+                        <td style="text-align:center;">${s.timeSec !== undefined && s.timeSec !== null ? formatTimeDisplay(s.timeSec) : '紙本'}</td>
                         <td style="text-align:center;">${getRate('retrieval')}</td>
                         <td style="text-align:center;">${getRate('inference')}</td>
                         <td style="text-align:center;">${getRate('interpretation')}</td>
@@ -5825,7 +7108,7 @@ ${targetData.content.replace(/\\n/g, '\n')}
                     
                     <!-- 📊 閱讀統計小結 -->
                     <div style="display: inline-block; background: #f8fafc; border: 1px dashed #94a3b8; padding: 8px 15px; border-radius: 6px; font-size: 0.95em;">
-                        此時段共完成 <strong>${totalRead}</strong> 篇測驗 
+                        此時段共完成 <strong>${totalRead}</strong> 篇測驗 (總用時：${formatTimeDisplay(totalTimeSec)})<br> 
                         ( 初階：${diffCounts.low} 篇 | 進階：${diffCounts.medium} 篇 | 高階：${diffCounts.high} 篇 )
                     </div>
                 </div>
@@ -5839,12 +7122,13 @@ ${targetData.content.replace(/\\n/g, '\n')}
                 <table class="print-table" style="margin-bottom: 50px; font-size: 11.5pt;">
                     <thead>
                         <tr>
-                            <th style="width: 13%; text-align:center; white-space: nowrap;">完成日期</th>
-                            <th style="width: 39%; text-align:left; padding-left: 15px;">篇章名稱 (難度)</th>
-                            <th style="width: 12%; text-align:center; white-space: nowrap;">提取訊息</th>
-                            <th style="width: 12%; text-align:center; white-space: nowrap;">直接推論</th>
-                            <th style="width: 12%; text-align:center; white-space: nowrap;">統整解釋</th>
-                            <th style="width: 12%; text-align:center; white-space: nowrap;">評價反思</th>
+                            <th style="width: 10%; text-align:center; white-space: nowrap;">完成日期</th>
+                            <th style="width: 40%; text-align:left; padding-left: 15px;">篇章名稱 (難度)</th>
+                            <th style="width: 10%; text-align:center; white-space: nowrap;">閱讀用時</th>
+                            <th style="width: 10%; text-align:center; white-space: nowrap;">提取訊息</th>
+                            <th style="width: 10%; text-align:center; white-space: nowrap;">直接推論</th>
+                            <th style="width: 10%; text-align:center; white-space: nowrap;">統整解釋</th>
+                            <th style="width: 10%; text-align:center; white-space: nowrap;">評價反思</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -5871,9 +7155,17 @@ ${targetData.content.replace(/\\n/g, '\n')}
             alert("請至少勾選一個班級進行列印！");
             return;
         }
-        const list = allUsersCache.filter(s => selectedClasses.includes(s.class));
+
+        // 🟢 修正：不僅篩選班級，且「排除在該時段內沒有任何作答紀錄的學生」
+        const list = allUsersCache.filter(s => {
+            if (!selectedClasses.includes(s.class)) return false;
+            // 檢查該學生在當前時段內是否有紀錄
+            const hasRecord = getFilteredSubmissions().some(sub => sub.username === s.username);
+            return hasRecord;
+        });
+
         if (list.length === 0) {
-            alert("所選班級查無學生！");
+            alert("所選班級在該時段內沒有任何學生的作答紀錄，無需列印！");
             return;
         }
         
@@ -5898,8 +7190,8 @@ ${targetData.content.replace(/\\n/g, '\n')}
     }
 
 
-    // 🖨️ 產生並列印實體工作紙 (省略最外框 + 增加文本獨立外框 + 動態排版)
-    function printWorksheet(articleKey, diff) {
+    // 🖨️ 產生並列印實體工作紙 (支援空白卷與答案版)
+    function printWorksheet(articleKey, diff, isAnswerKey = false) {
         const art = articlesCache[articleKey];
         if (!art) return;
         
@@ -5908,27 +7200,27 @@ ${targetData.content.replace(/\\n/g, '\n')}
 
         // 📝 針對不同難度設定動態排版變數
         let config = {
-            baseFont: '14pt',       // 基礎內文字體
-            titleFont: '16pt',      // 區塊標題字體
-            lineHeight: '1.8',      // 內文行距
-            qMargin: '25px',        // 題目與題目之間的間距
-            optMargin: '8px',       // 選項行與行之間的間距
-            optCols: '100%'         // 選項欄位寬度 (100%=單欄直排, 50%=雙欄並排)
+            baseFont: '14pt',       
+            titleFont: '16pt',      
+            lineHeight: '1.5',      
+            qMargin: '15px',        
+            optMargin: '8px',       
+            optCols: '100%'         
         };
 
         if (diff === 'low') {
-            config.baseFont = '15pt';
-            config.lineHeight = '2';
+            config.baseFont = '14pt';
+            config.lineHeight = '1.5';
             config.optCols = '100%'; 
         } else if (diff === 'medium') {
             config.baseFont = '13.5pt';
-            config.lineHeight = '1.7';
+            config.lineHeight = '1.5';
             config.optCols = '50%';  
-            config.qMargin = '18px';
+            config.qMargin = '15px';
         } else if (diff === 'high') {
             config.baseFont = '12pt'; 
             config.titleFont = '14pt';
-            config.lineHeight = '1.5';
+            config.lineHeight = '1.3';
             config.optCols = '50%';
             config.qMargin = '15px';
             config.optMargin = '4px';
@@ -5941,6 +7233,13 @@ ${targetData.content.replace(/\\n/g, '\n')}
         } else {
             questions.forEach((q, idx) => {
                 const pirlsInfo = PIRLS_LABELS[q.level] || { name: '閱讀理解' };
+                
+                // 判斷是否印出解析
+                let hintHtml = '';
+                if (isAnswerKey && q.hint) {
+                    hintHtml = `<div style="background: #fef3c7; border: 1px dashed #d97706; padding: 6px 12px; margin-top: 8px; border-radius: 6px; font-size: 0.9em; color: #92400e;">💡 解析：${q.hint}</div>`;
+                }
+
                 qHtml += `
                     <div style="margin-bottom: ${config.qMargin}; break-inside: avoid; page-break-inside: avoid;">
                         
@@ -5949,19 +7248,26 @@ ${targetData.content.replace(/\\n/g, '\n')}
                             ${idx + 1}. ${q.q} <span style="font-size: 0.85em; color: #555; font-weight: normal;">[${pirlsInfo.name}]</span>
                         </div>
                         
-                        <!-- 選項區域 (完美的懸掛縮排) -->
+                        <!-- 選項區域 -->
                         <div style="margin-left: 15px; line-height: 1.5; font-size: ${config.baseFont}; display: flex; flex-wrap: wrap;">
-                            ${['A', 'B', 'C', 'D'].map((letter, i) => `
+                            ${['A', 'B', 'C', 'D'].map((letter, i) => {
+                                // 如果是答案版且這是正確選項，就加上醒目的樣式
+                                const isCorrectOpt = isAnswerKey && q.correct === i;
+                                const optStyle = isCorrectOpt ? `color: #166534; font-weight: bold; background: #dcfce7; padding: 2px 8px; border-radius: 4px; border: 2px solid #22c55e;` : '';
+                                
+                                return `
                                 <div style="width: ${config.optCols}; margin-bottom: ${config.optMargin}; display: flex; align-items: flex-start;">
-                                    <div style="width: 25px; flex-shrink: 0;">${letter}.</div>
-                                    <div style="flex: 1;">${q.options[i]}</div>
-                                </div>
-                            `).join('')}
+                                    <div style="width: 25px; flex-shrink: 0; font-weight: ${isCorrectOpt ? 'bold' : 'normal'};">${letter}.</div>
+                                    <div style="flex: 1; ${optStyle}">${q.options[i]}</div>
+                                </div>`;
+                            }).join('')}
                         </div>
                         
-                        <!-- ▼ 作答括號移至這裡：在選項最後方靠右對齊 ▼ -->
+                        ${hintHtml}
+                        
+                        <!-- 作答括號 (如果是答案版，直接填入正確字母) -->
                         <div style="text-align: right; font-size: ${config.baseFont}; margin-top: 4px; padding-right: 15px;">
-                            (&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)
+                            (&nbsp;&nbsp;&nbsp;${isAnswerKey ? `<strong style="color:#dc2626;">${['A','B','C','D'][q.correct]}</strong>` : '&nbsp;&nbsp;'}&nbsp;&nbsp;&nbsp;)
                         </div>
                         
                     </div>
@@ -5969,49 +7275,58 @@ ${targetData.content.replace(/\\n/g, '\n')}
             });
         }
 
+        // 標題變化
+        const titleSuffix = isAnswerKey ? `<span style="color: #dc2626;">【教師答案版】</span>` : '學生版';
+        const docTitle = `閱讀理解訓練工作紙 ${titleSuffix}`;
+
         // 組合整份工作紙的 HTML
-        // 修改亮點 1: border: none !important 省略外框，padding: 5mm 10mm 拓展可用版面
         const html = `
             <div class="print-card" style="border: none !important; padding: 5mm 10mm; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;">
                 
-                <!-- 標題與抬頭 -->
-                <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px;">
-                    <h1 style="margin: 0 0 8px 0; font-size: 20pt;">閱讀理解訓練工作紙</h1>
+                <div style="position: relative; text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+                    <div style="position: absolute; top: 0; right: 0; font-size: 12pt; font-weight: bold; color: #333; border: 2px solid #333; padding: 4px 10px; border-radius: 6px;">
+                        文章代碼：${art.paperCode || '未綁定'}
+                    </div>
+
+                    <h1 style="margin: 0 0 8px 0; font-size: 20pt; padding-top: 5px;">${docTitle}</h1>
                     <h2 style="margin: 0; font-size: 15pt; color: #333;">《${art.title}》— ${diffName}挑戰</h2>
                 </div>
                 
-                <!-- 姓名班級欄位 -->
                 <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14pt; line-height: 2;">
-                    <div style="flex: 1;">班級：___________________</div>
-                    <div style="flex: 1; text-align: center;">座號：_____________</div>
-                    <div style="flex: 1.5; text-align: center;">姓名：_________________________</div>
-                    <div style="flex: 1; text-align: right;">得分：____________ / ${questions.length * 10}</div>
+                    <div style="flex: 1;">班級：__________________</div>
+                    <div style="flex: 1; text-align: center;">座號：____________</div>
+                    <div style="flex: 1.5; text-align: center;">姓名：________________________</div>
+                    <div style="flex: 1; text-align: right;">得分：___________ / ${questions.length * 10}</div>
                 </div>
                 
-                <!-- 閱讀篇章區塊 -->
                 <div style="margin-bottom: 25px;">
                     <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 10px; font-size: ${config.titleFont};"><i class="fa-solid fa-book-open"></i>閱讀篇章</h3>
-                    
-                    <!-- 修改亮點 2: 為文本加上實體框線 (border: 2px solid #000) 並增加 padding -->
                     <div style="border: 2px solid #000; border-radius: 8px; padding: 15px 20px; line-height: ${config.lineHeight}; font-size: ${config.baseFont}; white-space: pre-wrap; text-align: justify; box-sizing: border-box;">${art.content[diff]}</div>
                 </div>
 
-                <!-- 選擇題區塊 -->
                 <div>
-                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 15px; font-size: ${config.titleFont};"> <i class="fa-solid fa-pen-to-square"></i>  選擇題</h3>
+                    <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-top: 0; margin-bottom: 5px; font-size: ${config.titleFont};"> <i class="fa-solid fa-pen-to-square"></i>  選擇題</h3>
                     ${qHtml}
                 </div>
                 
-                <!-- 頁尾 -->
-                <div style="text-align: center; color: #666; font-size: 9pt; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 15px;">
+                <div style="text-align: center; color: #666; font-size: 8pt; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px;">
                     - 炮台山循道衛理中學 閱讀平台自動生成 -
                 </div>
             </div>
         `;
-
-        document.getElementById('print-area').innerHTML = html;
-        window.print();
+        
+        const printArea = document.getElementById('print-area');
+        if (!printArea) return;
+        printArea.innerHTML = html;
+        
+        document.body.appendChild(printArea);
+        
+        setTimeout(() => {
+            window.print();
+        }, 300);
     }
+
+
 
 /* ========================================================
    🅰️ 字體縮放核心功能
@@ -6085,7 +7400,7 @@ function resetFontSize() {
 
 
 /* ========================================================
-   📄 匯出工作紙為 Word (.docx) 檔案 (高仿真印刷版)
+   📄 匯出工作紙為 Word (.docx) 檔案 (高仿真印刷版 - 支援文章代碼)
 ======================================================== */
 function exportWorksheetAsDocx(articleKey, diff) {
     const art = articlesCache[articleKey];
@@ -6093,7 +7408,6 @@ function exportWorksheetAsDocx(articleKey, diff) {
         alert('找不到該篇章的資料！');
         return;
     }
-
     const diffName = diff === 'low' ? '初階' : (diff === 'medium' ? '進階' : '高階');
     const questions = art.quizzes[diff] || [];
 
@@ -6127,7 +7441,7 @@ function exportWorksheetAsDocx(articleKey, diff) {
         `;
     });
 
-    // 2. 組合整份文件的 HTML，大量使用 <table> 進行佈局
+    // 2. 組合整份文件的 HTML，大量使用 <table> 進行佈局適應 Word
     let contentHtml = `
         <!DOCTYPE html>
         <html>
@@ -6136,44 +7450,61 @@ function exportWorksheetAsDocx(articleKey, diff) {
             <style>
                 /* 🟢 這裡定義 Word 文件中的樣式，字體設定為標楷體 */
                 body { font-family: 'Biaukai', '標楷體', serif; font-size: 12pt; }
-                h1 { font-size: 20pt; margin:0; padding:0; }
+                h1 { font-size: 16pt; margin:0; padding:0; }
                 h2 { font-size: 16pt; margin:0; padding:0; font-weight: normal; }
                 h3 { font-size: 14pt; }
-                p { line-height: 1.6; margin: 5px 0; }
+                p { line-height: 1.5; margin: 5px 0; }
                 table { width: 100%; border-collapse: collapse; }
                 td { vertical-align: top; }
             </style>
         </head>
         <body>
-            <!-- 頁首：使用 table 模擬置中效果 -->
-            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
-                <h1>閱讀理解訓練工作紙</h1>
-                <h2>《${art.title}》— ${diffName}挑戰</h2>
-            </div>
-
-            <!-- 學生資料欄：使用 table 模擬排版 -->
-            <table style="margin-bottom: 15px; font-size: 14pt;">
+            <!-- 🌟 頁首：因為 Word 不支援絕對定位，所以使用 3 欄隱形表格來排版 -->
+            <table style="width: 100%; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 5px;">
                 <tr>
-                    <td style="width: 35%;">班級：___________________</td>
-                    <td style="width: 25%;">座號：_____________</td>
-                    <td style="width: 40%;">姓名：____________________</td>
+                    <td style="width: 15%; vertical-align: bottom;"></td>
+                    <td style="width: 70%; text-align: center; vertical-align: bottom;">
+                        <h1>閱讀理解訓練工作紙</h1>
+                        <h2>《${art.title}》— ${diffName}挑戰</h2>
+                    </td>
+                    <td style="width: 15%; text-align: right; vertical-align: bottom;">
+                        <!-- 🌟 新增文章代碼 (在 Word 中用邊框包起來) -->
+                        <div style="border: 1px solid #333; padding: 2px; font-weight: bold; font-size: 10pt; text-align: center;">
+                            文章代碼：<br>${art.paperCode || '未綁定'}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- 學生資料欄：加入得分欄位，並清除所有反斜線 -->
+            <table style="width: 100%; margin-top: 10px; margin-bottom: 1px; font-size: 14pt;">
+                <tr>
+                    <td style="width: 25%;vertical-align: bottom;">班級：___________</td>
+                    <td style="width: 20%;vertical-align: bottom;">座號：_______</td>
+                    <td style="width: 30%;vertical-align: bottom;">姓名：________________</td>
+                    <!-- 🌟 新增得分欄位 -->
+                    <td style="width: 25%; text-align: right;vertical-align: bottom;">得分：_______ / ${questions.length * 10}</td>
                 </tr>
             </table>
 
             <!-- 閱讀篇章區塊 -->
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 5px;">
                 <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-bottom: 10px;">閱讀篇章</h3>
-                <div style="border: 2px solid #000; border-radius: 8px; padding: 15px; text-align: justify; line-height: 1.8;">
+                <div style="border: 2px solid #000; padding: 8px; text-align: left; line-height: 1.3;">
+                    <!-- Word 不支援 border-radius 圓角，所以拿掉。保留框線 -->
                     ${art.content[diff].replace(/\n/g, '<br>')}
                 </div>
             </div>
 
             <!-- 選擇題區塊 -->
             <div>
-                <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-bottom: 15px;">選擇題</h3>
+                <h3 style="border-left: 4px solid #333; padding-left: 8px; margin-bottom: 10px;">選擇題</h3>
                 ${qHtml}
             </div>
             
+            <div style="text-align: center; color: #666; font-size: 8pt; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 15px;">
+                - 炮台山循道衛理中學 閱讀平台自動生成 -
+            </div>
         </body>
         </html>
     `;
@@ -6193,7 +7524,6 @@ function exportWorksheetAsDocx(articleKey, diff) {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-
     } catch (error) {
         console.error("匯出 Word 失敗:", error);
         alert("抱歉，匯出 Word 檔案時發生錯誤。");
