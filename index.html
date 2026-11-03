@@ -805,11 +805,51 @@
 
         <!-- 學生分頁 4: 獎勵兌換中心 -->
         <div id="tab-store" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="margin: 0;"><i class="fa-solid fa-gift" style="color: #ef4444; margin-right: 8px;"></i>積分獎勵兌換中心</h3>
                 <span style="font-size: 0.9em; color: #64748b;">(兌換獎勵扣除「現可用積分」，不影響「學年總積點」)</span>
             </div>
+            
+            <!-- ✨ 新增：獎品篩選與排序工具列 -->
+            <div class="filter-panel" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 15px;">
+                <div style="display:flex; align-items:center; gap:6px; flex: 1; min-width: 140px;">
+                    <label style="font-size:0.9em; font-weight:bold; white-space: nowrap;">排序方式：</label>
+                    <!-- 注意：這裡加上了 font-family 讓選項能顯示 Font Awesome 圖示 -->
+                <select id="store-sort" class="form-control" style="width: 100%; padding: 6px;" onchange="renderStudentStore()">
+                    <option value="default">預設 (綜合)</option>
+                    <option value="hot">🔥 熱門程度</option>
+                    <option value="date-new">最新上架</option>
+                    <option value="points-asc">所需積分 (低至高)</option>
+                    <option value="points-desc">所需積分 (高至低)</option>
+                </select>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; flex: 1; min-width: 140px;">
+                <label style="font-size:0.9em; font-weight:bold; white-space: nowrap;">狀態：</label>
+                <select id="store-status" class="form-control" style="width: 100%; padding: 6px;" onchange="renderStudentStore()">
+                    <option value="all">全部展示中</option>
+                    <option value="available">✅ 開放兌換中</option>
+                    <option value="upcoming">⏳ 即將開放</option>
+                    <option value="ending">⚠️ 即將結束 (7天內)</option>
+                </select>
+
+
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; flex: 1; min-width: 140px;">
+                    <label style="font-size:0.9em; font-weight:bold; white-space: nowrap;">積分範圍：</label>
+                    <select id="store-points" class="form-control" style="width: 100%; padding: 6px;" onchange="renderStudentStore()">
+                        <option value="all">不限</option>
+                        <option value="0-500">500 分或以下</option>
+                        <option value="501-5000">501 - 5000 分</option>
+                        <option value="5001+">5000 分以上</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; flex: 1.5; min-width: 180px;">
+                    <input type="text" id="store-keyword" class="form-control" placeholder="搜尋獎品名稱..." style="width: 100%; padding: 6px;" onkeyup="renderStudentStore()">
+                </div>
+            </div>
+
             <div class="store-grid" id="student-store-grid"></div>
+
             <div class="card" style="margin-top: 25px;">
                 <h4 style="margin-top: 0;">📋 我的兌換申請進度</h4>
                 <table class="data-table">
@@ -4600,24 +4640,86 @@ function renderStudentStore() {
     if (!grid) return;
     grid.innerHTML = '';
 
+    // 1. 取得篩選器與搜尋框的值
+    const sortVal = document.getElementById('store-sort') ? document.getElementById('store-sort').value : 'default';
+    const statusVal = document.getElementById('store-status') ? document.getElementById('store-status').value : 'all';
+    const pointsVal = document.getElementById('store-points') ? document.getElementById('store-points').value : 'all';
+    const keyword = document.getElementById('store-keyword') ? document.getElementById('store-keyword').value.toLowerCase().trim() : '';
+
     // ✨【終極防空保護】如果 rewardsCache 是 null 或 undefined，自動轉為 []，絕對不報錯
-    const visibleRewards = (rewardsCache || []).filter(r => r && r.status === 'published');
+    let visibleRewards = (rewardsCache || []).filter(r => r && r.status === 'published');
 
     if (visibleRewards.length === 0) {
         grid.innerHTML = '<p style="color:#64748b; grid-column: 1/-1;">目前暫無獎品上架。</p>';
         return;
     }
 
-    visibleRewards.forEach(item => {
+    const now = new Date();
+    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // 2. 預先計算狀態與兌換次數（用於排序與篩選）
+    visibleRewards = visibleRewards.map(item => {
         const stockInfo = calculateRewardStock(item.id);
+        const redeemedCount = stockInfo.pending + stockInfo.completed; // 兌換總數代表熱門度
         
-        let timeStatus = 'available'; // available, not_started, expired
-        let timeMsg = '';
-        const now = new Date();
-        
+        let timeStatus = 'available';
+        let isEndingSoon = false;
+
         if (item.startDate && new Date(item.startDate) > now) {
-            // 狀態 1：未開放
             timeStatus = 'not_started';
+        } else if (item.endDate && new Date(item.endDate) < now) {
+            timeStatus = 'expired';
+        } else if (item.endDate) {
+            if (new Date(item.endDate) <= nextWeek) {
+                isEndingSoon = true;
+            }
+        }
+        
+        return { ...item, stockInfo, redeemedCount, timeStatus, isEndingSoon };
+    });
+
+    // 3. 執行過濾邏輯 (搜尋、狀態、積分範圍)
+    visibleRewards = visibleRewards.filter(item => {
+        // 關鍵字搜尋
+        if (keyword && (!item.name || !item.name.toLowerCase().includes(keyword))) return false;
+        
+        // 狀態篩選
+        if (statusVal === 'available' && item.timeStatus !== 'available') return false;
+        if (statusVal === 'upcoming' && item.timeStatus !== 'not_started') return false;
+        if (statusVal === 'ending' && !item.isEndingSoon) return false;
+
+        // 積分範圍篩選
+        if (pointsVal === '0-500' && item.cost > 500) return false;
+        if (pointsVal === '501-5000' && (item.cost < 501 || item.cost > 5000)) return false;
+        if (pointsVal === '5001+' && item.cost <= 5000) return false;
+
+        return true;
+    });
+
+    // 4. 執行排序邏輯
+    visibleRewards.sort((a, b) => {
+        if (sortVal === 'hot') return b.redeemedCount - a.redeemedCount;
+        if (sortVal === 'points-asc') return a.cost - b.cost;
+        if (sortVal === 'points-desc') return b.cost - a.cost;
+        if (sortVal === 'date-new') {
+            const dateA = a.startDate || a.endDate || '2000-01-01';
+            const dateB = b.startDate || b.endDate || '2000-01-01';
+            return new Date(dateB) - new Date(dateA);
+        }
+        return 0; // default
+    });
+
+    // 如果過濾後沒有獎品
+    if (visibleRewards.length === 0) {
+        grid.innerHTML = '<p style="color:#64748b; grid-column: 1/-1; text-align:center; padding:20px;">找不到符合目前篩選條件的獎品。</p>';
+        return;
+    }
+
+    // 5. 渲染 HTML
+    visibleRewards.forEach(item => {
+        let timeMsg = '';
+        
+        if (item.timeStatus === 'not_started') {
             const formattedStart = item.startDate.replace('T', ' ');
             if (item.endDate) {
                 const formattedEnd = item.endDate.replace('T', ' ');
@@ -4625,30 +4727,34 @@ function renderStudentStore() {
             } else {
                 timeMsg = `<div class="stock-tag-warning" style="background:#e0e7ff; color:#1e40af; border-color:#bfdbfe;">🕒 未開放 (由 ${formattedStart} 起開始兌換)</div>`;
             }
-        } else if (item.endDate && new Date(item.endDate) < now) {
-            // 狀態 2：已過期
-            timeStatus = 'expired';
+        } else if (item.timeStatus === 'expired') {
             timeMsg = `<div class="stock-tag-warning" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">⛔ 已過期</div>`;
         } else if (item.endDate) {
-            // 狀態 3：新增功能！已開放，且有設定結束日期 (加入限時提示)
             const formattedEnd = item.endDate.replace('T', ' ');
-            // 這裡使用了柔和的黃色背景，提示學生把握時間
-            timeMsg = `<div class="stock-tag-warning" style="background:#fef9c3; color:#854d0e; border-color:#fef08a;">⏳ 兌換進行中 (至 ${formattedEnd} 結束)</div>`;
+            if (item.isEndingSoon) {
+                timeMsg = `<div class="stock-tag-warning" style="background:#fee2e2; color:#dc2626; border-color:#fca5a5;">⚠️ 即將結束 (${formattedEnd})</div>`;
+            } else {
+                timeMsg = `<div class="stock-tag-warning" style="background:#fef9c3; color:#854d0e; border-color:#fef08a;">⏳ 兌換進行中 (至 ${formattedEnd} 結束)</div>`;
+            }
         }
 
-        
         const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width:100%; height:140px; object-fit:cover; border-radius:8px; margin-bottom:10px;">` : '';
-        const isBtnDisabled = stockInfo.available <= 0 || timeStatus !== 'available';
+        const isBtnDisabled = item.stockInfo.available <= 0 || item.timeStatus !== 'available';
         
         let btnText = '申請兌換';
-        if (stockInfo.available <= 0) btnText = '已換罄';
-        if (timeStatus === 'not_started') btnText = '未開放';
-        if (timeStatus === 'expired') btnText = '兌換結束';
-        
+        if (item.stockInfo.available <= 0) btnText = '已換罄';
+        if (item.timeStatus === 'not_started') btnText = '未開放';
+        if (item.timeStatus === 'expired') btnText = '兌換結束';
+
+        // ✨ 判斷是否為熱門獎品 (被兌換超過 3 次即標示)
+        const isHot = item.redeemedCount >= 3;
+        const hotBadge = isHot ? `<span style="position:absolute; top:-10px; right:-10px; background:#ef4444; color:white; padding:4px 8px; border-radius:12px; font-size:0.85em; font-weight:bold; box-shadow:0 4px 6px rgba(0,0,0,0.2); z-index:5;">🔥 熱門</span>` : '';
+
         grid.innerHTML += `
-            <div class="store-item" ${timeStatus === 'available' ? '' : 'style="opacity:0.75; filter: grayscale(50%);"'}>
+            <div class="store-item" style="position:relative; ${item.timeStatus === 'available' ? '' : 'opacity:0.75; filter: grayscale(50%);'}">
+                ${hotBadge}
                 ${imgHtml}
-                ${stockInfo.available <= 5 && stockInfo.available > 0 && timeStatus === 'available' ? `<div class="stock-tag-warning">⚡ 僅剩 ${stockInfo.available} 件！</div>` : ''}
+                ${item.stockInfo.available <= 5 && item.stockInfo.available > 0 && item.timeStatus === 'available' ? `<div class="stock-tag-warning">⚡ 僅剩 ${item.stockInfo.available} 件！</div>` : ''}
                 ${timeMsg}
                 <h4 style="margin: 0 0 6px 0;">${item.name}</h4>
                 <p style="color:#64748b; font-size: 0.9em;">所需現積分：<strong style="color:var(--warning);">${item.cost}</strong> 分</p>
@@ -4657,6 +4763,7 @@ function renderStudentStore() {
         `;
     });
 }
+
 
 // 兌換獎勵 (【V4.0 數據庫寫入版】)
 async function redeemReward(rewardId, name, cost) {
