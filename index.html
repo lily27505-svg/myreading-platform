@@ -585,6 +585,133 @@
     line-height: 1.45 !important;
     word-break: break-all;
 }
+    /* =========================================================
+       👨‍🏫 教師專屬：明亮辦公模式 (補回遺失的白底樣式)
+       ========================================================= */
+    /* 1. 恢復明亮背景 */
+    body.teacher-mode {
+        background: #f1f5f9 !important; 
+        color: #334155 !important;
+    }
+    
+    /* 2. 恢復白色實體卡片，移除毛玻璃 */
+    body.teacher-mode .card, 
+    body.teacher-mode .filter-panel, 
+    body.teacher-mode .batch-panel {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+        color: #334155 !important;
+    }
+
+    /* 3. 恢復深色標題文字 */
+    body.teacher-mode h1, body.teacher-mode h2, body.teacher-mode h3, 
+    body.teacher-mode h4, body.teacher-mode h5, body.teacher-mode label, 
+    body.teacher-mode strong {
+        color: #1e293b !important;
+        text-shadow: none !important;
+    }
+
+    /* 4. 恢復下拉選單與輸入框的白底黑字 (強制解鎖 ID 綁定) */
+    body.teacher-mode .form-control, 
+    body.teacher-mode .filter-ctrl,
+    body.teacher-mode option,
+    body.teacher-mode #filter-article-category,
+    body.teacher-mode #filter-article-grade,
+    body.teacher-mode #filter-article-target-class,
+    body.teacher-mode #filter-article-status,
+    body.teacher-mode #article-keyword-input {
+        background: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #cbd5e1 !important;
+        outline: none !important;
+    }
+    body.teacher-mode .form-control:focus, 
+    body.teacher-mode .filter-ctrl:focus,
+    body.teacher-mode #filter-article-category:focus,
+    body.teacher-mode #filter-article-grade:focus,
+    body.teacher-mode #filter-article-target-class:focus,
+    body.teacher-mode #filter-article-status:focus,
+    body.teacher-mode #article-keyword-input:focus {
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+    }
+    body.teacher-mode .filter-label,
+    body.teacher-mode .filter-panel label {
+        color: #475569 !important;
+    }
+
+    /* 5. 恢復表格的明亮專業感 */
+    body.teacher-mode table.data-table,
+    body.teacher-mode table.table-article-management {
+        background: #ffffff !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    body.teacher-mode table.data-table th,
+    body.teacher-mode table.table-article-management th {
+        background: #f8fafc !important;
+        color: #475569 !important;
+        border-bottom: 2px solid #cbd5e1 !important;
+    }
+    body.teacher-mode table.data-table td,
+    body.teacher-mode table.table-article-management td {
+        background: transparent !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        color: #334155 !important;
+    }
+    body.teacher-mode table.data-table tbody tr:hover td,
+    body.teacher-mode table.table-article-management tbody tr:hover td {
+        background-color: #f1f5f9 !important;
+        color: #1e293b !important;
+    }
+
+    /* 6. 恢復分頁按鈕的明亮風格 */
+    body.teacher-mode .sub-tab-btn, 
+    body.teacher-mode .tab-btn {
+        background: #f1f5f9 !important;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+    body.teacher-mode .sub-tab-btn.active, 
+    body.teacher-mode .tab-btn.active {
+        background: #3b82f6 !important; 
+        color: #ffffff !important;
+        border-color: #2563eb !important;
+        box-shadow: none !important;
+    }
+
+    /* 7. 移除按鈕的地下城發光特效 */
+    body.teacher-mode .btn-purple,
+    body.teacher-mode .btn-warning,
+    body.teacher-mode .btn-success,
+    body.teacher-mode .btn-secondary {
+        box-shadow: none !important;
+    }
+    body.teacher-mode .btn-purple:hover,
+    body.teacher-mode .btn-warning:hover,
+    body.teacher-mode .btn-success:hover {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* 8. 恢復提示區塊的白底 */
+    body.teacher-mode #quiz-placeholder {
+        background: #f8fafc !important;
+        border: 2px dashed #cbd5e1 !important;
+        color: #64748b !important;
+    }
+    
+    /* 9. 移除文章卡片的暗黑效果 */
+    body.teacher-mode .article-box {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.teacher-mode .article-box-title { color: #1e293b !important; }
+
+
     </style>
 </head>
 <body>
@@ -637,7 +764,7 @@
             </div>
         </header>
 
-        <div class="tab-buttons">
+        <div class="card profile-header">
             <button class="tab-btn active" onclick="switchStudentTab('reading', this)"><i class="fa-solid fa-book-open" style="color: #2563eb; margin-right: 6px;"></i> 閱讀挑戰與答題</button>
             <button class="tab-btn" onclick="switchStudentTab('badges', this)"><i class="fa-solid fa-trophy" style="color: #f59e0b; margin-right: 8px;"></i> 我的榮譽徽章館</button>
             <button class="tab-btn" onclick="switchStudentTab('history', this)"><i class="fa-solid fa-scroll" style="color: #d97706; margin-right: 6px;"></i> 個人閱讀成長歷程</button>
@@ -1595,40 +1722,492 @@
             <div class="card">
                 <h4>📋 學生獎品兌換申請清單 (支援批量操作、篩選與分頁)</h4>
 <style>
-    .filter-ctrl {
-        height: 36px !important;
-        padding: 4px 10px !important;
-        font-size: 14px !important;
-        border-radius: 6px !important;
-        border: 1px solid #cbd5e1 !important;
-        box-sizing: border-box !important;
+    /* =========================================================
+       🔮 學生專屬：星空魔幻風 (Arcane Magic Theme) & iPad 優化完整版
+       ========================================================= */
+    
+    /* 1. 星空魔幻主背景 (深紫與深藍交織) */
+    body.student-mode {
+        background: linear-gradient(135deg, #0f172a 0%, #2e1065 50%, #1e1b4b 100%) !important;
+        background-attachment: fixed !important; /* 防止 iPad 滾動時背景斷層 */
+        color: #e2e8f0 !important; 
+        -webkit-font-smoothing: antialiased;
     }
-    .filter-btn {
-        height: 36px !important;
-        padding: 0 14px !important;
-        font-size: 14px !important;
-        border-radius: 6px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-sizing: border-box !important;
+
+    /* 2. 消除框中框 */
+    body.student-mode .container {
+        background: transparent !important;
+        box-shadow: none !important;
         border: none !important;
-        cursor: pointer;
-        color: white;
-        font-weight: bold;
     }
-    .filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
+
+    /* 3. 卡片魔法水晶毛玻璃效果 */
+    body.student-mode .card,
+    body.student-mode #tab-store {
+        background: rgba(30, 27, 75, 0.6) !important; 
+        backdrop-filter: blur(12px) !important; 
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(139, 92, 246, 0.25) !important; 
+        border-radius: 16px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(139, 92, 246, 0.05) !important;
+        color: #f8fafc !important;
     }
-    .filter-label {
-        font-weight: bold;
-        font-size: 13px;
-        color: #475569;
-        margin: 0;
+
+    /* 確保所有標題在暗色下可讀 */
+    body.student-mode h1, body.student-mode h2, body.student-mode h3, 
+    body.student-mode h4, body.student-mode h5, body.student-mode label, 
+    body.student-mode strong {
+        color: #f1f5f9 !important; 
     }
+
+    /* =========================================================
+       📱 iPad / 觸控裝置專屬優化 (Touch Optimization)
+       ========================================================= */
+    @media (hover: none) and (pointer: coarse) {
+        /* A. 防止誤觸選取文字 (保留閱讀區可選取) */
+        body.student-mode .tab-buttons, 
+        body.student-mode .badge-bar,
+        body.student-mode .diff-selector,
+        body.student-mode .option-label,
+        body.student-mode .article-box {
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+
+        /* B. 放大觸控熱區 (Apple 建議最少 44px) */
+        body.student-mode .btn,
+        body.student-mode .tab-btn,
+        body.student-mode .option-label {
+            min-height: 48px !important; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* C. 消除 iPad 上黏滯的 Hover 特效，改為 Active 物理回饋 */
+        body.student-mode .option-label:active,
+        body.student-mode .article-box:active,
+        body.student-mode .diff-btn:active {
+            transform: scale(0.98) !important; 
+            transition: transform 0.1s !important;
+        }
+    }
+
+    /* =========================================================
+       🔍 下拉選單、輸入框與按鈕 (魔法發光質感)
+       ========================================================= */
+    body.student-mode .form-control,
+    body.student-mode select,
+    body.student-mode input[type="text"],
+    body.student-mode input[type="date"],
+    body.student-mode input[type="number"],
+    body.student-mode .filter-ctrl {
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        color: #f8fafc !important;
+        border: 1px solid rgba(139, 92, 246, 0.4) !important;
+        border-radius: 10px !important;
+    }
+    body.student-mode .form-control:focus,
+    body.student-mode select:focus,
+    body.student-mode input:focus,
+    body.student-mode .filter-ctrl:focus {
+        background-color: rgba(30, 27, 75, 0.9) !important;
+        border-color: #a855f7 !important;
+        box-shadow: 0 0 12px rgba(168, 85, 247, 0.4) !important;
+        outline: none !important;
+    }
+    body.student-mode option {
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+    }
+
+    /* =========================================================
+       🗂️ 表格暗黑化 (防白底)
+       ========================================================= */
+    body.student-mode .data-table,
+    body.student-mode table {
+        background-color: rgba(15, 23, 42, 0.4) !important;
+        color: #e2e8f0 !important;
+        border: none !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+    }
+    body.student-mode .data-table th,
+    body.student-mode table th {
+        background-color: rgba(46, 16, 101, 0.8) !important; /* 深紫表頭 */
+        color: #f8fafc !important;
+        border-bottom: 2px solid #a855f7 !important;
+    }
+    body.student-mode .data-table td,
+    body.student-mode table td {
+        background-color: transparent !important;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.15) !important;
+        color: #e2e8f0 !important;
+    }
+    /* 修正表格懸停時的對比度，改為深紫底配白字 */
+    body.student-mode .data-table tbody tr:hover td,
+    body.student-mode table tbody tr:hover td {
+        background-color: rgba(76, 29, 149, 0.7) !important; /* 加深的奧術紫底色 */
+        color: #ffffff !important; /* 確保白字清晰可見 */
+    }
+    
+    /* 確保表格內若有其他標籤，懸停時也不會因為繼承問題而變淡 */
+    body.student-mode .data-table tbody tr:hover td *,
+    body.student-mode table tbody tr:hover td * {
+        color: #ffffff !important;
+    }
+
+    /* 分頁標籤按鈕 (Tabs) */
+    body.student-mode .tab-buttons { background: transparent !important; }
+    body.student-mode .tab-btn {
+        background: rgba(15, 23, 42, 0.5) !important;
+        color: #cbd5e1 !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    body.student-mode .tab-btn.active {
+        background: linear-gradient(135deg, #6d28d9, #4c1d95) !important; 
+        color: #ffffff !important;
+        border-color: #a855f7 !important;
+        box-shadow: 0 0 15px rgba(139, 92, 246, 0.6) !important;
+    }
+
+    /* 學生個人狀態/等級面板 (Profile Header) */
+    body.student-mode header {
+        background: rgba(30, 27, 75, 0.5) !important; 
+        backdrop-filter: blur(12px) !important; 
+        border: 1px solid rgba(139, 92, 246, 0.3) !important; 
+        border-radius: 16px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+        padding: 20px;
+    }
+    body.student-mode header h2, body.student-mode header span, 
+    body.student-mode header small, body.student-mode header div {
+        color: #f1f5f9 !important;
+    }
+    /* 讓總積點亮起來 */
+    body.student-mode #user-total-points, body.student-mode #user-points {
+        color: #fcd34d !important;
+        text-shadow: 0 0 10px rgba(252, 211, 77, 0.6);
+    }
+
+    /* =========================================================
+       ⚔️ 難度選擇按鈕 (綠 ➔ 藍 ➔ 紫 RPG 稀有度配色)
+       ========================================================= */
+    body.student-mode .diff-btn {
+        background: rgba(15, 23, 42, 0.5) !important;
+        border: 2px solid rgba(139, 92, 246, 0.2) !important;
+        color: #f1f5f9 !important;
+        border-radius: 16px !important;
+    }
+    body.student-mode .diff-btn strong { color: #ffffff !important; }
+    body.student-mode .diff-btn small { color: #cbd5e1 !important; }
+
+    /* 初階按鈕 (治癒之綠) */
+    @media (hover: hover) and (pointer: fine) {
+        body.student-mode #diff-low:hover { border-color: rgba(16, 185, 129, 0.8) !important; background: rgba(16, 185, 129, 0.15) !important; }
+    }
+    body.student-mode #diff-low.selected { border-color: #34d399 !important; background: rgba(16, 185, 129, 0.25) !important; box-shadow: 0 0 20px rgba(16, 185, 129, 0.3) !important; }
+
+    /* 進階按鈕 (奧術之藍) */
+    @media (hover: hover) and (pointer: fine) {
+        body.student-mode #diff-medium:hover { border-color: rgba(59, 130, 246, 0.8) !important; background: rgba(59, 130, 246, 0.15) !important; }
+    }
+    body.student-mode #diff-medium.selected { border-color: #60a5fa !important; background: rgba(59, 130, 246, 0.25) !important; box-shadow: 0 0 20px rgba(59, 130, 246, 0.3) !important; }
+
+    /* 高階按鈕 (史詩之紫) */
+    @media (hover: hover) and (pointer: fine) {
+        body.student-mode #diff-high:hover { border-color: rgba(139, 92, 246, 0.8) !important; background: rgba(139, 92, 246, 0.15) !important; }
+    }
+    body.student-mode #diff-high.selected { border-color: #a78bfa !important; background: rgba(139, 92, 246, 0.25) !important; box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important; }
+
+    /* =========================================================
+       🗺️ 文章分類光暈 (紅 ➔ 青 ➔ 粉)
+       ========================================================= */
+    body.student-mode .article-box {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border-color: rgba(139, 92, 246, 0.25) !important;
+    }
+    @media (hover: hover) and (pointer: fine) {
+        body.student-mode .article-box:hover {
+            background: rgba(46, 16, 101, 0.8) !important;
+            transform: translateY(-3px);
+        }
+    }
+    body.student-mode .article-box-title { color: #ffffff !important; }
+    
+    /* 班級優先推薦區塊 (烈焰橘 Orange) */
+    body.student-mode .zone-class { 
+        background: rgba(249, 115, 22, 0.12) !important; 
+        border: 1px solid rgba(249, 115, 22, 0.5) !important; 
+        box-shadow: inset 0 0 20px rgba(249, 115, 22, 0.15) !important;
+        border-radius: 12px; padding: 16px !important; margin-bottom: 24px !important; transition: all 0.3s ease;
+    }
+    body.student-mode .zone-class:hover { border-color: rgba(249, 115, 22, 0.8) !important; box-shadow: inset 0 0 30px rgba(249, 115, 22, 0.25), 0 0 15px rgba(249, 115, 22, 0.3) !important; }
+    body.student-mode .zone-class .zone-title { color: #fdba74 !important; border-bottom: 2px solid rgba(249, 115, 22, 0.5) !important; text-shadow: 0 0 10px rgba(253, 186, 116, 0.6); padding-bottom: 8px; margin-bottom: 16px; }
+
+    /* 年級精選建議區塊 (星光青 Cyan) */
+    body.student-mode .zone-grade { 
+        background: rgba(6, 182, 212, 0.12) !important; 
+        border: 1px solid rgba(6, 182, 212, 0.5) !important; 
+        box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.15) !important;
+        border-radius: 12px; padding: 16px !important; margin-bottom: 24px !important; transition: all 0.3s ease;
+    }
+    body.student-mode .zone-grade:hover { border-color: rgba(6, 182, 212, 0.8) !important; box-shadow: inset 0 0 30px rgba(6, 182, 212, 0.25), 0 0 15px rgba(6, 182, 212, 0.3) !important; }
+    body.student-mode .zone-grade .zone-title { color: #67e8f9 !important; border-bottom: 2px solid rgba(6, 182, 212, 0.5) !important; text-shadow: 0 0 10px rgba(103, 232, 249, 0.6); padding-bottom: 8px; margin-bottom: 16px; }
+
+    /* 其他探索篇章區塊 (櫻花玫瑰 Rose) */
+    body.student-mode .zone-other { 
+        background: rgba(225, 29, 72, 0.12) !important; 
+        border: 1px solid rgba(225, 29, 72, 0.5) !important; 
+        box-shadow: inset 0 0 20px rgba(225, 29, 72, 0.15) !important;
+        border-radius: 12px; padding: 16px !important; margin-bottom: 24px !important; transition: all 0.3s ease;
+    }
+    body.student-mode .zone-other:hover { border-color: rgba(225, 29, 72, 0.8) !important; box-shadow: inset 0 0 30px rgba(225, 29, 72, 0.25), 0 0 15px rgba(225, 29, 72, 0.3) !important; }
+    body.student-mode .zone-other .zone-title { color: #fda4af !important; border-bottom: 2px solid rgba(225, 29, 72, 0.5) !important; text-shadow: 0 0 10px rgba(253, 164, 175, 0.6); padding-bottom: 8px; margin-bottom: 16px; }
+
+    /* =========================================================
+       🎖️ 榮譽徽章館
+       ========================================================= */
+    body.student-mode .badge-card { background: rgba(30, 27, 75, 0.5) !important; border-color: rgba(139, 92, 246, 0.3) !important; }
+    body.student-mode .badge-card.earned {
+        background: linear-gradient(145deg, rgba(245, 158, 11, 0.2) 0%, rgba(46, 16, 101, 0.7) 100%) !important;
+        border-color: rgba(245, 158, 11, 0.8) !important;
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.3) !important;
+    }
+    body.student-mode .badge-card.locked { background: rgba(15, 23, 42, 0.3) !important; border-color: rgba(255, 255, 255, 0.1) !important; }
+    body.student-mode .badge-card div { color: #ffffff !important; }
+    body.student-mode .badge-card.locked div { color: #94a3b8 !important; }
+
+    /* =========================================================
+       ⚠️ 護眼保護區：實際閱讀文章的區塊必須保持明亮 (SEN友善)
+       ========================================================= */
+    body.student-mode .reading-area, 
+    body.student-mode #article-card, 
+    body.student-mode #quiz-card {
+        background: #fdfbf7 !important; 
+        color: #1e293b !important; 
+        border-radius: 16px !important;
+        border: 2px solid #e2e8f0 !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+    }
+    body.student-mode #article-title, body.student-mode #quiz-title, 
+    body.student-mode #article-card h3, body.student-mode #quiz-card h4 { 
+        color: #1e293b !important; text-shadow: none !important; 
+    }
+    body.student-mode #article-body { 
+        background: transparent !important; color: #334155 !important; border: none !important; 
+        font-weight: 500 !important; line-height: 2 !important; letter-spacing: 0.5px !important; padding: 10px 0 !important;
+    }
+    body.student-mode .quiz-item-box { 
+        background: #ffffff !important; border: 1px solid #cbd5e1 !important; color: #475569 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+    }
+    body.student-mode .quiz-item-box p { color: #1e293b !important; font-weight: 700 !important; }
+    body.student-mode .option-label { 
+        background: #f8fafc !important; color: #334155 !important; border: 2px solid transparent !important; font-weight: 600 !important; 
+        border-radius: 12px !important;
+    }
+    
+    @media (hover: hover) and (pointer: fine) {
+        body.student-mode .option-label:hover { background: #f3e8ff !important; border-color: #a855f7 !important; color: #1e293b !important; }
+    }
+    
+    body.student-mode .option-label.correct { background: #ecfdf5 !important; border-color: #10b981 !important; color: #065f46 !important; }
+    body.student-mode .option-label.incorrect { background: #fef2f2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
+    
+    /* 選中狀態 (高對比度紫藍) */
+    body.student-mode .option-label:has(input:checked) {
+        background: #ede9fe !important;
+        border-color: #8b5cf6 !important;
+        color: #1e1b4b !important;
+        font-weight: 700 !important;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2) !important;
+    }
+
+    body.student-mode .reading-bar { background: #f1f5f9 !important; border-color: #e2e8f0 !important; }
+    body.student-mode #timer-text, body.student-mode #pace-hint { color: #334155 !important; }
+    
+    /* 提示區與文章預覽框 */
+    body.student-mode #quiz-placeholder {
+        background: rgba(15, 23, 42, 0.4) !important; border: 2px dashed rgba(139, 92, 246, 0.4) !important; color: #e2e8f0 !important;
+    }
+    body.student-mode #difficulty-preview-box {
+        background: rgba(15, 23, 42, 0.5) !important; border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    }
+    body.student-mode #difficulty-preview-box h5, body.student-mode #preview-title { color: #c4b5fd !important; } 
+    body.student-mode #difficulty-preview-box div, body.student-mode #preview-content { color: #f8fafc !important; } 
+
+    /* =========================================================
+       👁️ 高對比度修復：解決特定區域反白與文字隱形問題
+       ========================================================= */
+
+    /* 1. 修復測驗選項 (.option-label) 點擊與 Hover 的對比度 */
+    body.student-mode .option-label:hover { 
+        background: #e0e7ff !important; /* 淺紫藍底 */
+        border-color: #8b5cf6 !important; 
+        color: #1e1b4b !important; /* 極深紫色字體，確保高對比 */
+        font-weight: 700 !important;
+    }
+    
+    /* 當選項內的 input (radio) 被選中時，強制整行變色 */
+    body.student-mode .option-label:has(input:checked) {
+        background: #e0e7ff !important;
+        border-color: #8b5cf6 !important;
+        color: #1e1b4b !important;
+        font-weight: 700 !important;
+    }
+
+    /* 2. 修復積分獎勵中心 (Store) 的篩選列反白 */
+    body.student-mode #tab-store .filter-panel select,
+    body.student-mode #tab-store .filter-panel input,
+    body.student-mode #tab-store .filter-panel .filter-ctrl {
+        background-color: rgba(15, 23, 42, 0.8) !important; /* 加深底色 */
+        color: #f8fafc !important; /* 確保文字為亮白 */
+        border: 1px solid rgba(139, 92, 246, 0.6) !important;
+    }
+    /* 確保下拉選單內的選項也是深底白字 */
+    body.student-mode #tab-store .filter-panel option {
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+    }
+
+    /* 3. 修復個人閱讀歷程 (History Table) 表頭反白 */
+    body.student-mode table.student-history-table th {
+        background-color: rgba(30, 41, 59, 0.95) !important; /* 深色表頭 */
+        color: #f8fafc !important; /* 亮白色文字 */
+        border-bottom: 2px solid #a78bfa !important;
+    }
+    
+    /* 確保歷程表格的內容文字清晰 */
+    body.student-mode table.student-history-table td {
+        color: #e2e8f0 !important; 
+    }
+    
+    /* 歷程表格 Hover 時的對比度 */
+    body.student-mode table.student-history-table tbody tr:hover td {
+        background-color: rgba(139, 92, 246, 0.25) !important;
+        color: #ffffff !important;
+    }
+
+    /* =========================================================
+       🔥 絕對強制修復包 (解決所有殘留反白與對比度問題)
+       ========================================================= */
+
+    /* 1. 解決下載模版按鈕反白 (圖24) */
+    body.student-mode .btn-secondary,
+    body.student-mode .tab-buttons,
+    body.student-mode .tab-buttons button {
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        color: #e2e8f0 !important;
+        border: 1px solid rgba(139, 92, 246, 0.4) !important;
+    }
+    body.student-mode .btn-secondary:hover {
+        background-color: rgba(15, 23, 42, 0.9) !important;
+        color: #ffffff !important;
+        border-color: #8b5cf6 !important;
+    }
+
+    /* 2. 解決獎品 Filter Bar 變白 (圖29、圖30) */
+    /* 強制整個 Filter Panel 的底色變暗，裡面的所有輸入框也要變暗 */
+    body.student-mode .filter-panel,
+    body.student-mode .filter-panel select,
+    body.student-mode .filter-panel input,
+    body.student-mode .filter-ctrl {
+        background-color: rgba(15, 23, 42, 0.8) !important; /* 深黑藍色底 */
+        color: #ffffff !important; /* 確保文字是純白 */
+        border: 1px solid rgba(139, 92, 246, 0.5) !important; /* 邊框微紫 */
+    }
+    /* 點擊展開時的選項也要深色 */
+    body.student-mode .filter-panel option,
+    body.student-mode .filter-ctrl option {
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+    }
+    /* Placeholder (搜尋框預設文字) 的顏色調亮一點點 */
+    body.student-mode .filter-panel input::placeholder {
+        color: #94a3b8 !important;
+    }
+
+    /* 3. 解決個人閱讀歷程表格反白 (圖28、圖31) */
+    body.student-mode table.student-history-table td {
+        background-color: transparent !important; /* 讓原本的亮紫色消失 */
+        color: #e2e8f0 !important; /* 文字變回淺灰色 */
+    }
+    
+    /* 4. 解決測驗選項點擊後，文字不夠深的問題 */
+    body.student-mode .option-label:hover,
+    body.student-mode .option-label:has(input:checked),
+    body.student-mode .option-label.active {
+        background-color: #e0e7ff !important; /* 淺紫藍色底 */
+        border-color: #8b5cf6 !important; /* 紫色邊框 */
+        /* 👇 這是最關鍵的一行：強制文字變成極深的藏青色，確保跟淺色底形成高對比！ */
+        color: #1e1b4b !important; 
+        font-weight: 800 !important; /* 加粗 */
+    }
+    /* 如果選項內有子元素 (例如文字包在 span 或 p 裡)，也要一併強制改色 */
+    body.student-mode .option-label:hover *,
+    body.student-mode .option-label:has(input:checked) * {
+        color: #1e1b4b !important;
+    }
+    /* =========================================================
+       🛠️ 介面微調：字體按鈕淺色底 + 選項取消粗體
+       ========================================================= */
+
+    /* 1. 將閱讀區內的字體控制按鈕 (A-, 重設, A+) 改為淺色底與深色字 */
+    body.student-mode #font-controls .btn-secondary {
+        background-color: #f1f5f9 !important; 
+        color: #475569 !important; 
+        border: 1px solid #cbd5e1 !important;
+    }
+    
+    /* 滑鼠懸停時的淺色變化 (避免在 iPad 卡住，加入 hover 判斷) */
+    @media (hover: hover) and (pointer: fine) {
+        body.student-mode #font-controls .btn-secondary:hover {
+            background-color: #e2e8f0 !important;
+            color: #1e293b !important;
+        }
+    }
+
+    /* 2. 取消測驗選項的粗體，讓閱讀更舒適 */
+    body.student-mode .option-label {
+        font-weight: normal !important; 
+    }
+    
+    /* 保持選項內的文字也絕對不要粗體 (防止子標籤覆蓋) */
+    body.student-mode .option-label * {
+        font-weight: normal !important;
+    }
+
+    /* =========================================================
+       🛠️ 終極表格懸停對比度修復 (強制覆蓋所有舊設定)
+       ========================================================= */
+       
+    /* 針對所有表格，包含閱讀歷程與獎品庫，強制懸停時為「實心深紫底」 */
+    body.student-mode table.data-table tbody tr:hover td,
+    body.student-mode table.student-history-table tbody tr:hover td,
+    body.student-mode .data-table tbody tr:hover td {
+        background-color: #4c1d95 !important; /* 使用實心奧術深紫，絕對夠深！ */
+        color: #ffffff !important;
+    }
+    
+    /* 確保表格內的任何文字、連結、圖示在懸停時都變成清晰的純白色 */
+    body.student-mode table.data-table tbody tr:hover td *,
+    body.student-mode table.student-history-table tbody tr:hover td *,
+    body.student-mode .data-table tbody tr:hover td * {
+        color: #ffffff !important;
+    }
+
+    /* 確保表格在一般（未懸停）狀態下，背景絕對是透明深色，不會有奇怪的白底透出來 */
+    body.student-mode table.data-table td,
+    body.student-mode table.student-history-table td {
+        background-color: transparent !important;
+        color: #e2e8f0 !important;
+    }
+
+
 </style>
+
+
+
 <!-- 終極版：控制面板 (單行緊湊排版) -->
 <div style="background: #f8fafc; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
 
@@ -1799,8 +2378,15 @@ function checkLoginRole() {
         document.getElementById('student-login-section').style.display = 'none';
         document.getElementById('teacher-login-section').style.display = 'block';
         document.getElementById('login-title').innerHTML = '👩‍🏫 教師管理後台';
+        
+        // 老師登入：確保沒有地下城標籤
+        document.body.classList.remove('student-mode');
+    } else {
+        // 學生登入：加上專屬的地下城鑰匙
+        document.body.classList.add('student-mode');
     }
 }
+
 
 async function login(userParam, passParam, isAutoLogin = false) {
     const loginBtn = document.getElementById('login-button');
@@ -2205,7 +2791,13 @@ function switchStudentTab(tab, element) {
     // 【V7.0 最終修正】根據不同分頁，渲染所有必要的內容
     switch (tab) {
         case 'reading':
-            if (typeof populateStudentArticleDropdown === 'function') populateStudentArticleDropdown();
+            // 🛠️ Bug 修復：點擊標籤時，強制收起閱讀區，回到篇章選擇畫面
+            if (typeof goBackToArticleSelection === 'function') {
+                goBackToArticleSelection();
+            }
+            if (typeof populateStudentArticleDropdown === 'function') {
+                populateStudentArticleDropdown();
+            }
             break;
         case 'history':
             // 渲染「個人閱讀成長歷程」表格
@@ -2221,7 +2813,6 @@ function switchStudentTab(tab, element) {
             break;
     }
 }
-
 
 
     function isArticleGradeMatch(artGrades, studentGrade) {
@@ -7682,6 +8273,9 @@ function exportWorksheetAsDocx(articleKey, diff) {
             <div style="text-align: center; color: #666; font-size: 8pt; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 15px;">
                 - 炮台山循道衛理中學 閱讀平台自動生成 -
             </div>
+
+
+
         </body>
         </html>
     `;
@@ -7728,6 +8322,18 @@ function exportWorksheetAsDocx(articleKey, diff) {
 </div>
 
 <script>
+// 💡 確保網頁一載入，就立刻看網址並貼上對應標籤 (非常重要，請加回這段！)
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.location.search.includes('role=teacher')) {
+            document.body.classList.add('teacher-mode');
+            document.body.classList.remove('student-mode');
+        } else {
+            document.body.classList.add('student-mode');
+            document.body.classList.remove('teacher-mode');
+        }
+    });
+
+
 function showStreakModal(diff, art) {
     const modal = document.getElementById('streak-success-modal');
     const nextDiff = diff === 'low' ? '🟡 進階理解' : '🔴 高階思維';
